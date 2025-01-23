@@ -235,6 +235,7 @@ begin
 
 									node_dst_reg <= current_instruction(13 downto 11);
 
+									-- <DST>
 									if current_instruction(13 downto 11) = NIL then
 										-- Do nothing for NIL
 										node_io_write <= '0';
@@ -420,28 +421,33 @@ begin
 					when TIS_FINISH =>
 
 						if node_io_read = '1' then
-							-- Mark read as done <SRC> was ACC or NIL
+							-- Mark read as if done <SRC> was ACC or NIL
 							-- This is done to make a write take two cycles
 							if node_src_reg = ACC or node_src_reg = NIL then
 								node_io_read <= '0';
+
+								-- Write to ACC or NIL
+								if node_dst_reg = ACC then
+									node_acc <= node_src;
+									IncrementPC(node_pc, last_instruction_address);
+								elsif node_dst_reg = NIL then
+									IncrementPC(node_pc, last_instruction_address);
+								end if;
 							end if;
 
 							-- Check whether previous read/write was successful
 							if (i_down_active = '1') and ((node_src_reg = DOWN) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= to_integer(signed(i_down));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= DOWN;
 								end if;
 
 								-- Write to ACC or NIL
-								if node_io_write = '1' and node_dst_reg = ACC then
-									node_io_write <= '0';
-									node_acc <= node_src;
+								if node_dst_reg = ACC then
+									node_acc <= to_integer(signed(i_down));
 									IncrementPC(node_pc, last_instruction_address);
-								elsif node_io_write = '1' and node_dst_reg = NIL then
-									node_io_write <= '0';
+								elsif node_dst_reg = NIL then
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
 
@@ -499,11 +505,11 @@ begin
 								elsif current_instruction(15 downto 12) = "0000" then
 									if current_instruction(10) = '1' then
 										-- SUB
-										node_acc <= node_acc - i_down;
+										node_acc <= node_acc - to_integer(signed(i_down));
 										IncrementPC(node_pc, last_instruction_address);
 									else
 										-- ADD
-										node_acc <= node_acc + i_down;
+										node_acc <= node_acc + to_integer(signed(i_down));
 										IncrementPC(node_pc, last_instruction_address);
 									end if;
 								elsif current_instruction = x"4800" then
@@ -532,16 +538,6 @@ begin
 									node_last <= UP;
 								end if;
 								-- Increment PC for all other instructions
-								IncrementPC(node_pc, last_instruction_address);
-							end if;
-
-							-- Write to ACC or NIL
-							if node_dst_reg = ACC then
-								node_io_write <= '0';
-								node_acc <= node_src;
-								IncrementPC(node_pc, last_instruction_address);
-							elsif node_dst_reg = NIL then
-								node_io_write <= '0';
 								IncrementPC(node_pc, last_instruction_address);
 							end if;
 						else
