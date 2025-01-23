@@ -30,8 +30,9 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "includes.h"
-#include "tis_node.h"
+#include "tis_asm.h"
 
 /* Definition of Task Stacks */
 #define   TASK_STACKSIZE       2048
@@ -78,6 +79,10 @@ void output(void* pdata)
     }
   }
 }
+
+#define ASM_SIZE 512
+#define LINE_SIZE 20
+
 /* The main function creates two task and starts multi-tasking */
 int main(void)
 {
@@ -85,10 +90,59 @@ int main(void)
 //	*TIS_NODE_CONFIG = 0; // 1 Instruction
 //	TIS_NODE_INSTR[0] = 0xD802; // MOV UP, DOWN
 
-	*TIS_NODE_CONFIG = 2; // 3 Instructions
-	 TIS_NODE_INSTR[0] = 0xC802; // MOV UP, ACC
-	 TIS_NODE_INSTR[1] = 0x0801; // ADD ACC (Multiply each number by 2)
-	 TIS_NODE_INSTR[2] = 0xD801; // MOV ACC, DOWN
+//	*TIS_NODE_CONFIG = 2; // 3 Instructions
+//	 TIS_NODE_INSTR[0] = 0xC802; // MOV UP, ACC
+//	 TIS_NODE_INSTR[1] = 0x0801; // ADD ACC (Multiply each number by 2)
+//	 TIS_NODE_INSTR[2] = 0xD801; // MOV ACC, DOWN
+
+	 char buffer[ASM_SIZE] = ""; // Main buffer to store all input
+	 char line[LINE_SIZE];         // Temporary buffer for each line
+	 uint16_t program[16] = {0};
+
+	 puts("Enter an assembly program");
+
+	 while (1) {
+		 // Read a line from standard input
+		 if (fgets(line, LINE_SIZE, stdin) == NULL) {
+			 break; // Stop if there's an error or EOF
+		 }
+
+		 // Remove the trailing newline character, if any
+		 size_t len = strlen(line);
+		 if (len > 0 && line[len - 1] == '\n') {
+			 line[len - 1] = '\0';
+		 }
+
+		 // Check for an empty line
+		 if (line[0] == '\0') {
+			 int instruction_cnt = tis_assemble_program(buffer, program);
+			 if (instruction_cnt != -1) {
+				 puts("Writing program to node");
+				 *TIS_NODE_CONFIG = instruction_cnt - 1;
+				 for (int i = 0; i < instruction_cnt; i++) {
+					 TIS_NODE_INSTR[i] = program[i];
+				 }
+
+				 break;
+			 }
+			 puts("Error: assembler failed");
+		 }
+
+		 // Check if adding the line would exceed the buffer size
+		 if (strlen(buffer) + strlen(line) + 1 >= ASM_SIZE) {
+			 puts("Error: Buffer overflow, try again");
+			 memset(buffer, 0, sizeof(buffer));
+			 continue;
+		 }
+
+		 // Add the line to the buffer
+		 strcat(buffer, line);
+		 strcat(buffer, "\n"); // Add newline to separate lines in the buffer
+	 }
+
+
+
+
 
   OSTaskCreateExt(input,
                   NULL,

@@ -282,6 +282,10 @@ int tis_assemble_program(char *program, uint16_t *instructions) {
             instructions[pc] &= ~register_mask;
             instructions[pc] |= src_reg; 
 
+            if (opcode == MOV) {
+            	instructions[pc] |= 0xC000;
+            }
+
             if (opcode == SUB || opcode == ADD) {
                 instructions[pc] |= 0x800;
             }

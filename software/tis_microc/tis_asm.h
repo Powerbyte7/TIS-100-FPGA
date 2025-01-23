@@ -47,6 +47,8 @@ typedef enum {
 // Returns number of written characters, excluding \0
 int tis_dissassemble(uint16_t instruction, char* buffer);
 
+int tis_assemble_program(char *program, uint16_t *instructions);
+
 // Tests assembly decoding
 void tis_disassembler_test();
 void tis_assembler_test();
