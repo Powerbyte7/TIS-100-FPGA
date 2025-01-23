@@ -16,22 +16,22 @@ entity tis_execution_node is
 		tis_active     : in  std_logic;
 		-- Left conduit
 		i_left         : in  std_logic_vector(10 downto 0);
-		i_left_active  : in  std_logic;
+		i_left_active  : in  std_logic := '0';
 		o_left         : out std_logic_vector(10 downto 0);
 		o_left_active  : out std_logic;
 		-- Right conduit
 		i_right        : in  std_logic_vector(10 downto 0);
-		i_right_active : in  std_logic;
+		i_right_active : in  std_logic := '0';
 		o_right        : out std_logic_vector(10 downto 0);
 		o_right_active : out std_logic;
 		-- Up conduit
 		i_up           : in  std_logic_vector(10 downto 0);
-		i_up_active    : in  std_logic;
+		i_up_active    : in  std_logic := '0';
 		o_up           : out std_logic_vector(10 downto 0);
 		o_up_active    : out std_logic;
 		-- Down conduit
 		i_down         : in  std_logic_vector(10 downto 0);
-		i_down_active  : in  std_logic;
+		i_down_active  : in  std_logic := '0';
 		o_down         : out std_logic_vector(10 downto 0);
 		o_down_active  : out std_logic;
 		-- For debugging purposes
