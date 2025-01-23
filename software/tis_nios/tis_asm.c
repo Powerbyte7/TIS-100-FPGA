@@ -105,19 +105,19 @@ static const char *opcodes_str[13] = {
 };
 
 static const char *asm_formats[] = {
-    [NOP] = " NOP",
-    [MOV] = " MOV %s %s",
-    [ADD] = " ADD %s",
-    [SUB] = " SUB %s",
-    [SWP] = " SWP",
-    [SAV] = " SAV",
-    [NEG] = " NEG",
-    [JMP] = " JMP %s",
-    [JEZ] = " JEZ %s",
-    [JNZ] = " JNZ %s",
-    [JGZ] = " JGZ %s",
-    [JLZ] = " JLZ %s",
-    [JRO] = " JRO %s",
+    [NOP] = "NOP",
+    [MOV] = "MOV",
+    [ADD] = "ADD",
+    [SUB] = "SUB",
+    [SWP] = "SWP",
+    [SAV] = "SAV",
+    [NEG] = "NEG",
+    [JMP] = "JMP",
+    [JEZ] = "JEZ",
+    [JNZ] = "JNZ",
+    [JGZ] = "JGZ",
+    [JLZ] = "JLZ",
+    [JRO] = "JRO",
 };
 
 static char *asm_operands[] = {
@@ -138,6 +138,7 @@ static char *asm_operands[] = {
 
 
 tis_opcode_t tis_parse_opcode(const char *str) {
+    // All opcodes are 3 characters
     if (strlen(str) != 3) {
         return INVALID;
     }
@@ -155,45 +156,22 @@ int tis_imm11_encode(int integer) {
     if (integer < -999) {
         return 999 | imm11_sign_bit;
     } else if (integer < 0) {
-        return (integer & imm11_mask) | imm11_sign_bit;
+        return (integer*-1) | imm11_sign_bit;
     } else if (integer < 999) {
         return integer;
     }
     return 999;
 }
 
-static inline int check_empty(const char* str) {
-    while (*str) {
-        if (!isspace(*str)) {
-            return 0; // Has characters
-        }
-        str++;
-    }
-
-    return 1; // Only whitespace
-}
-
 // Returns number of instructions written, or -1 on error
-int tis_encode(const char *program, uint16_t *instructions) {
+int tis_encode(char *program, uint16_t *instructions) {
     // Copy program to buffer to use strtok
-    static char buffer[512];
+    char buffer[512];
     strcpy(buffer, program);
 
-    // Replace commas with spaces for sscanf
-    char *ptr = buffer;
-    while(*ptr) {
-        if (*ptr == '\0') {
-            break;
-        } else if (*ptr == ',') {
-            *ptr = ' ';
-        }
-        *ptr++;
-    }
-
     // Split on newlines
-    const char delimeter[] = "\n";
-    // strtok_r pointer
-    char *rest = buffer;
+    const char token_delimiter[] = "\t ,";
+    
 
     // PC to increase after every parsed instruction
     int pc = 0;
@@ -201,96 +179,143 @@ int tis_encode(const char *program, uint16_t *instructions) {
     char *labels_pos[16] = {0};
     char *labels_ref[16] = {0};
 
-    while (1) {
-        char *line = strtok_r(rest, delimeter, &rest);
-        int len = strlen(line);
+    // Pointer to current line
+    char *line;
+    // strtok_r pointer
+    char *nextline = program;
+    
+    // Parse every line
+    while ((line = strtok_r(nextline, "\n", &nextline)) != NULL) {
+        printf("PC: %d\n", pc);
 
-        // End after reaching end of string
-        if (line == NULL) {
-            return pc+1;
-        }
-
-        // Skip empty lines
-        if (check_empty(line)) {
-            continue;
-        }
-
-        // Check for reasonable line length
-        if (len > 20) {
+        // Check for maximum line length
+        int line_len = strlen(line);
+        if (line_len > 20) {
             return -1; 
         }
 
-        // Check for label
-        int count = sscanf(line, " %s:", &labels_pos[pc]);
-        if (count == 1) {
-            // Exclude label from instruction parsing
-            line = strtok_r(rest, ":", &rest);
+        // Divide line in code and comment
+        char* comment;
+        strtok_r(line, "#", &comment);
+
+        printf("Line: %s\n", line);
+
+        // First token is either label, opcode, or empty
+        char *rest = NULL;
+        char *token = strtok_r(line, token_delimiter, &rest);
+
+        printf("Token1: %s\n", token);
+
+        // Check for empty line
+        if (token == NULL) {
+            continue;
         }
 
-        // Check every instruction for a match
-        for (tis_opcode_t opc = 0; opc < (sizeof(asm_formats) / sizeof(asm_formats[0])); opc++) {
-            char src[16];
-            char dst[16];
-
-            // sscanf returns opcount, or EOF on failure
-            int opcount = sscanf(line, asm_formats[opc], &src, &dst);
-            if (opcount != asm_operands[opc]) { 
-                continue; 
-            } 
-
-            // Set instruction identifying bits
-            instructions[pc] = 0x0; // TODO asm_codes[opc]; 
-
-            // End if no further operands
-            if (opcount == 0) {
-                break;
-            }
-
-            // Check if <SRC> is register
-            tis_reg_t src_reg = tis_register_encode(src);
-            if (opc == JMP || opc == JEZ || opc == JGZ || opc == JLZ || opc == JNZ) {
-                // Store label string for later linking
-                labels_ref[pc] = strstr(line, src);
-                break;
-            } else if (src_reg != INVALID) {
-                // Place <SRC> in first 3 bits
-                instructions[pc] &= ~register_mask;
-                instructions[pc] |= src_reg; 
-            } else {
-                // Check if <SRC> is integer
-                int integer;
-                int result = sscanf(src, "%d", &integer);
-                if (result != 1) {
-                    // Couldn't parse register nor number
-                    return -1;
-                }
-                if (opc == MOV || opc == SUB || opc == ADD ) {
-                    // integer goes in first 11 bits.
-                    instructions[pc] |= tis_imm11_encode(integer);
-                }
-            }
-
-            // End if no further operands
-            if (opcount == 1) {
-                break;
-            }
-
-            // Check if <DST> is register
-            tis_reg_t dst_reg = tis_register_encode(dst);
-            if (dst_reg != INVALID) {
-                // Place <DST> in bytes 13-11 
-                instructions[pc] &= ~(register_mask<<11);
-                instructions[pc] |= dst_reg << 11; 
-            } else {
-                // Couldn't parse register
+        // Check for label which ends with ':'
+        int token_len = strlen(token);
+        if (token[token_len-1] == ':') {
+            // Avoid replacing existing label
+            if (labels_pos[pc]) {
                 return -1;
             }
-            
+
+            // Save label without ':'
+            token[token_len-1] = '\0';
+            labels_pos[pc] = token;
+
+            // Get next token
+            token = strtok_r(NULL, token_delimiter, &rest);
+            if (token == NULL) {
+                continue;
+            }
+        }
+
+        printf("Instructiontoken: %s\n", token);
+
+        // Check for valid opcode
+        tis_opcode_t opcode = tis_parse_opcode(token);
+        if (opcode == INVALID) {
+            return -1;
+        }
+
+        // Set instruction identifying bits
+        instructions[pc] = 0x0; // TODO asm_codes[opc]; 
+
+        // End if no further operands
+        int opcount = asm_operands[opcode];
+        if (opcount == 0) {
+            pc++;
+            continue;
+        }
+
+        // Get <SRC>
+        char *src = strtok_r(NULL, token_delimiter, &rest);
+        if (src == NULL) {
+            return -1; // <SRC> not found
+        }
+
+        printf("SRC: %s\n", src);
+
+        // Check if <SRC> is register
+        tis_reg_t src_reg = tis_register_encode(src);
+        if (opcode == JMP || opcode == JEZ || opcode == JGZ || opcode == JLZ || opcode == JNZ) {
+            // Store label string for later linking
+            labels_ref[pc] = src;
+            break;
+        } else if (src_reg != INVALID) {
+            // Place <SRC> in first 3 bits
+            instructions[pc] &= ~register_mask;
+            instructions[pc] |= src_reg; 
+        } else {
+            // Check if <SRC> is integer
+            int integer;
+            int result = sscanf(src, "%d", &integer);
+            if (result != 1) {
+                // Couldn't parse register nor number
+                return -1;
+            }
+            if (opcode == MOV || opcode == SUB || opcode == ADD ) {
+                if (opcode == SUB) {
+                    integer *= -1;
+                }
+                // Integer goes in first 11 bits.
+                instructions[pc] |= tis_imm11_encode(integer);
+            }
+        }
+
+        // End if no further operands
+        if (opcount == 1) {
+            pc++;
+            continue;
+        }
+
+        // Get <DST>
+        char *dst = strtok_r(NULL, token_delimiter, &rest);
+        if (dst == NULL) {
+            return -1; // <DST> not found
+        }
+
+        printf("DST: %s\n", dst);
+
+        // Check if <DST> is register
+        tis_reg_t dst_reg = tis_register_encode(dst);
+        if (dst_reg != INVALID) {
+            // Place <DST> in bytes 13-11 
+            instructions[pc] &= ~(register_mask<<11);
+            instructions[pc] |= dst_reg << 11; 
+        } else {
+            // Couldn't parse register
+            return -1;
         }
 
         // Increase after every line
         pc++;
     }
+
+    // TODO link labels
+
+    // Number of instructions written
+    return pc;
 }
 
 int tis_decode_test() {
@@ -309,25 +334,30 @@ int tis_encode_test() {
 	puts("Starting encode");
 
     const char* assembly =
-    "NOP\n"
+    "START: NOP # COMMENT\n"
     "ADD 421\n"
-    "SUB 421";
+    "SUB 421\n"
+    "ADD ANY\n"
+    "SUB NIL\n"
+    "MOV 744, ACC";
 
     uint16_t expected[] = {
         instructions_bin[0],
         instructions_bin[1],
         instructions_bin[2],
+        instructions_bin[3],
+        instructions_bin[4],
+        instructions_bin[5],
     };
 
-    uint16_t result[3];
+    uint16_t result[8];
     int count = tis_encode(assembly, result);
 
     printf("Managed to encode %d instructions\n", count);
 
-
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i <= 5; i++) {
         if (expected[i] != result[i]) {
-            printf("Failed at %d\n", i);
+            printf("Failed at %d\nExpected: %x\nResult: %x\n", i, expected[i], result[i]);
         }
     }
 
