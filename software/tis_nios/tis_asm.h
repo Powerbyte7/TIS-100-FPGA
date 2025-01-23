@@ -22,6 +22,22 @@ typedef enum {
     LAST = 0b111,
 } tis_reg_t;
 
+typedef enum {
+    NOP,
+    MOV,
+    ADD,
+    SUB,
+    SWP,
+    SAV,
+    NEG,
+    JMP,
+    JEZ,
+    JNZ,
+    JGZ,
+    JLZ,
+    JRO,
+} tis_opcode_t;
+
 #define imm6_mask (0x003F)
 #define imm10_mask (0x3FF)
 #define imm11_mask (0x7FF)
@@ -29,10 +45,10 @@ typedef enum {
 #define register_mask (0b111)
 
 // Returns number of written characters, excluding \0
-int tis_decode(uint16_t instruction, char* buffer);
+int tis_dissassemble(uint16_t instruction, char* buffer);
 
 // Tests assembly decoding
-int tis_decode_test();
-int tis_encode_test();
+void tis_disassembler_test();
+void tis_assembler_test();
 
 #endif /* TIS_ASM_H_ */

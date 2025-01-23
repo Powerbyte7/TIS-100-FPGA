@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+
 #include "tis_node.h"
 
 //struct tis_node a = {
@@ -44,11 +45,11 @@ int main()
 //  node_info(&b,buffer);
 //  puts(buffer);
 //
-//  // Test assembly decoding
-//   tis_decode_test();
+  // Test assembly decoding
+  tis_disassembler_test();
 
-   // Test assembly decoding
-   tis_encode_test();
+   // Test assembly encoding
+   tis_assembler_test();
 
   return 0;
 }

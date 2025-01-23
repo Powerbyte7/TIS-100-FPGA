@@ -9,6 +9,7 @@
 #define TIS_NODE_H_
 
 #include <stdint.h>
+
 #include "tis_asm.h"
 
 struct tis_node {

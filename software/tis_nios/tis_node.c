@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+
 #include "tis_node.h"
 #include "tis_asm.h"
 
@@ -38,7 +39,7 @@ int node_info(struct tis_node* node, char buffer[]) {
 
     for (int i = 0; i < instruction_count; i++) {
         uint16_t instruction = node->instructions[i];
-        ptr_offset += tis_decode(instruction, &buffer[ptr_offset]);
+        ptr_offset += tis_dissassemble(instruction, &buffer[ptr_offset]);
         buffer[ptr_offset] = '\n';
         ptr_offset += 1;
     }
