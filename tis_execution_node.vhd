@@ -191,83 +191,99 @@ begin
 					when TIS_RUN =>
 						-- DEBUG
 						-- report "PC: " & to_string(to_integer(node_pc)) & " ACC: " & to_string(node_acc) severity note;
-
 						-- Only proceed without ongoing I/O operation
 						if (node_io_read = '0') and (node_io_write = '0') then
 							-- Decode Instruction
 							case current_instruction(15 downto 14) is
 								when "00" => -- ADD/SUB
+									node_io_read <= '0';
+									node_io_write <= '0';
+
 									if current_instruction(11) = '1' then
 										-- ADD or SUB with register
 										if current_instruction(2 downto 0) = NIL then
 											-- Do nothing for NIL
-											node_io_read <= '0';
-											node_io_write <= '0';
 											node_src <= 0;
 										elsif current_instruction(2 downto 0) = ACC then
-											node_io_read <= '0';
-											node_io_write <= '0';
 											node_src <= node_acc;
 										elsif current_instruction(2 downto 0) = LAST then
-											-- If LAST is 000, node will never complete reading
-											node_io_read <= '1';
-											node_io_write <= '0';
+											-- If LAST is NIL, node will read 0
+											if node_last = NIL then
+												node_io_read <= '0';
+												node_src <= 0;
+											else
+												node_io_read <= '1';
+											end if;
 											node_src_reg <= node_last;
 										else
 											node_io_read <= '1';
-											node_io_write <= '0';
 											node_src_reg <= current_instruction(2 downto 0);
 										end if;
 									else
 										-- ADD or SUB with immediate operand
 										if current_instruction(10) = '1' then
 											-- report "OPC: SUB " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
-											node_io_read <= '0';
-											node_io_write <= '0';
 											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
 										else
 											-- report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
-											node_io_read <= '0';
-											node_io_write <= '0';
 											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
 										end if;
 									end if;
-								when "10" => -- MOV with immediate operand
+								when "10" => -- MOV #<imm10>, <DST>
+									node_io_read <= '1';
+									node_io_write <= '1';
+
+									node_dst_reg <= current_instruction(13 downto 11);
+
 									if current_instruction(13 downto 11) = NIL then
 										-- Do nothing for NIL
-										node_io_read <= '0';
 										node_io_write <= '0';
 									elsif current_instruction(13 downto 11) = ACC then
-										node_io_read <= '0';
 										node_io_write <= '0';
 										node_acc <= to_integer(signed(current_instruction(10 downto 0)));
 									elsif current_instruction(13 downto 11) = LAST then
-										-- If LAST is 000, node will never complete writing
-										node_io_read <= '0';
-										node_io_write <= '1';
+										-- If LAST is NIL, node skip writing
+										if node_last = NIL then
+											node_io_write <= '0';
+										end if;
 										node_dst_reg <= node_last;
 										node_dst <= to_integer(signed(current_instruction(10 downto 0)));
 									else
-										node_io_read <= '0';
-										node_io_write <= '1';
-										node_dst_reg <= current_instruction(13 downto 11);
 										node_dst <= to_integer(signed(current_instruction(10 downto 0)));
 									end if;
-								when "11" => -- MOV with <SRC>
+								when "11" => -- MOV <SRC>, <DST>
+									node_io_read <= '1';
+									node_io_write <= '1';
+
+									node_src_reg <= current_instruction(2 downto 0);
+									node_dst_reg <= current_instruction(13 downto 11);
+
+									-- <SRC>
 									if current_instruction(2 downto 0) = NIL then
-										node_io_read <= '1';
-										node_io_write <= '1';
 										node_src <= 0;
 									elsif current_instruction(2 downto 0) = ACC then
-										node_io_read <= '1';
-										node_io_write <= '1';
 										node_src <= node_acc;
 									elsif current_instruction(2 downto 0) = LAST then
-										node_io_read <= '1';
-										node_io_write <= '1';
-										-- If LAST is 000, node will never complete reading
+										-- If LAST is NIL, node will read 0
+										if node_last = NIL then
+											node_src <= 0;
+										end if;
 										node_src_reg <= node_last;
 									end if;
+
+									-- <DST>
+									if current_instruction(13 downto 11) = NIL then
+										node_io_write <= '0';
+									elsif current_instruction(13 downto 11) = ACC then
+										node_io_write <= '0';
+									elsif current_instruction(13 downto 11) = LAST then
+										-- If LAST is NIL, node skip writing
+										if node_last = NIL then
+											node_io_write <= '0';
+										end if;
+										node_dst_reg <= node_last;
+									end if;
+
 								when others =>
 							end case;
 						end if; -- IO_NONE check
@@ -286,7 +302,7 @@ begin
 								o_left_active <= '1';
 							end if;
 						elsif node_io_write = '1' then
-							if (node_src_reg = RIGHT) or (node_src_reg = ANY) then
+							if (node_dst_reg = RIGHT) or (node_dst_reg = ANY) then
 								-- Try write on RIGHT port
 								o_right_active <= '1';
 							end if;
@@ -316,10 +332,10 @@ begin
 							end if;
 						elsif node_io_write = '1' then
 							-- Check whether previous write was successful
-							if (i_right_active = '1') and ((node_src_reg = RIGHT) or (node_src_reg = ANY)) then
+							if (i_right_active = '1') and ((node_dst_reg = RIGHT) or (node_dst_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
-								if node_src_reg = ANY then
+								if node_dst_reg = ANY then
 									node_last <= RIGHT;
 								end if;
 							elsif (node_dst_reg = LEFT) or (node_dst_reg = ANY) then
@@ -352,10 +368,10 @@ begin
 							end if;
 						elsif node_io_write = '1' then
 							-- Check whether previous write was successful
-							if (i_left_active = '1') and ((node_src_reg = LEFT) or (node_src_reg = ANY)) then
+							if (i_left_active = '1') and ((node_dst_reg = LEFT) or (node_dst_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
-								if node_src_reg = ANY then
+								if node_dst_reg = ANY then
 									node_last <= LEFT;
 								end if;
 							elsif (node_dst_reg = DOWN) or (node_dst_reg = ANY) then
@@ -388,10 +404,10 @@ begin
 							end if;
 						elsif node_io_write = '1' then
 							-- Check whether previous write was successful
-							if (i_down_active = '1') and ((node_src_reg = DOWN) or (node_src_reg = ANY)) then
+							if (i_down_active = '1') and ((node_dst_reg = DOWN) or (node_dst_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
-								if node_src_reg = ANY then
+								if node_dst_reg = ANY then
 									node_last <= DOWN;
 								end if;
 							elsif (node_dst_reg = UP) or (node_dst_reg = ANY) then
@@ -403,26 +419,42 @@ begin
 						node_state <= TIS_FINISH;
 					when TIS_FINISH =>
 
-						-- Check whether previous read/write was successful
 						if node_io_read = '1' then
+							-- Mark read as done <SRC> was ACC or NIL
+							-- This is done to make a write take two cycles
+							if node_src_reg = ACC or node_src_reg = NIL then
+								node_io_read <= '0';
+							end if;
+
+							-- Check whether previous read/write was successful
 							if (i_down_active = '1') and ((node_src_reg = DOWN) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= to_integer(signed(i_up));
+								node_src <= to_integer(signed(i_down));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= DOWN;
 								end if;
-								-- Update program counter
+
+								-- Write to ACC or NIL
+								if node_io_write = '1' and node_dst_reg = ACC then
+									node_io_write <= '0';
+									node_acc <= node_src;
+									IncrementPC(node_pc, last_instruction_address);
+								elsif node_io_write = '1' and node_dst_reg = NIL then
+									node_io_write <= '0';
+									IncrementPC(node_pc, last_instruction_address);
+								end if;
+
 								if current_instruction(15 downto 3) = "0110000000000" then -- JRO
-									if (to_integer(node_pc) + to_integer(signed(i_up))) > to_integer(last_instruction_address) then
+									if (to_integer(node_pc) + to_integer(signed(i_down))) > to_integer(last_instruction_address) then
 										-- Clamp to maximum address
 										node_pc <= last_instruction_address;
-									elsif (to_integer(node_pc) + to_integer(signed(i_up))) < 0 then
+									elsif (to_integer(node_pc) + to_integer(signed(i_down))) < 0 then
 										-- Clamp to minimum address
 										node_pc <= (others => '0');
 									else
 										-- Update address
-										node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_up)), node_pc'length);
+										node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_down)), node_pc'length);
 									end if;
 								elsif current_instruction(15 downto 9) = "0111000" then -- JMP
 									-- Check JMP conditions
@@ -467,11 +499,11 @@ begin
 								elsif current_instruction(15 downto 12) = "0000" then
 									if current_instruction(10) = '1' then
 										-- SUB
-										node_acc <= node_acc - node_src;
+										node_acc <= node_acc - i_down;
 										IncrementPC(node_pc, last_instruction_address);
 									else
 										-- ADD
-										node_acc <= node_acc + node_src;
+										node_acc <= node_acc + i_down;
 										IncrementPC(node_pc, last_instruction_address);
 									end if;
 								elsif current_instruction = x"4800" then
@@ -500,6 +532,16 @@ begin
 									node_last <= UP;
 								end if;
 								-- Increment PC for all other instructions
+								IncrementPC(node_pc, last_instruction_address);
+							end if;
+
+							-- Write to ACC or NIL
+							if node_dst_reg = ACC then
+								node_io_write <= '0';
+								node_acc <= node_src;
+								IncrementPC(node_pc, last_instruction_address);
+							elsif node_dst_reg = NIL then
+								node_io_write <= '0';
 								IncrementPC(node_pc, last_instruction_address);
 							end if;
 						else
