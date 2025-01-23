@@ -99,6 +99,7 @@ begin
 					else
 						readdata <= std_logic_vector(to_signed(values(tail_ptr), readdata'length));
 						tail_ptr <= (tail_ptr + 1) mod buffer_length;
+						count <= count - 1;
 					end if;
 				else
 					readdata <= node_config;
@@ -108,6 +109,7 @@ begin
 					if count < buffer_length then
 						values(tail_ptr) <= to_tis_integer(signed(writedata));
 						tail_ptr <= (tail_ptr - 1 + buffer_length) mod buffer_length;
+						count <= count + 1;
 					end if;
 				else
 					node_config <= writedata;
@@ -161,6 +163,7 @@ begin
 								-- Read value from LEFT
 								values((head_ptr + 1) mod buffer_length) <= i_left;
 								head_ptr <= (head_ptr + 1) mod buffer_length;
+								count <= count + 1;
 								-- Read if buffer can take another value
 								if not (count = buffer_length - 1) then
 									-- Read from RIGHT
@@ -172,6 +175,7 @@ begin
 							elsif o_right_active = '1' and i_right_active = '1' then
 								-- Written value to RIGHT
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								count <= count - 1;
 								-- Check if any values are left in buffer
 								if not (count = 0) then
 									-- Write to LEFT
@@ -210,6 +214,7 @@ begin
 								-- Read value from RIGHT
 								values((head_ptr + 1) mod buffer_length) <= i_right;
 								head_ptr <= (head_ptr + 1) mod buffer_length;
+								count <= count + 1;
 								-- Read if buffer can take another value
 								if not (count = buffer_length - 1) then
 									-- Read from DOWN
@@ -221,6 +226,7 @@ begin
 							elsif o_down_active = '1' and i_down_active = '1' then
 								-- Written value to DOWN
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								count <= count - 1;
 								-- Check if any values are left in buffer
 								if not (count = 0) then
 									-- Write to RIGHT
@@ -260,6 +266,7 @@ begin
 								-- Read value from DOWN
 								values((head_ptr + 1) mod buffer_length) <= i_down;
 								head_ptr <= (head_ptr + 1) mod buffer_length;
+								count <= count + 1;
 								-- Read if buffer can take another value
 								if not (count = buffer_length - 1) then
 									-- Read from UP
@@ -271,6 +278,7 @@ begin
 							elsif o_up_active = '1' and i_up_active = '1' then
 								-- Written value to UP
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								count <= count - 1;
 								-- Check if any values are left in buffer
 								if not (count = 0) then
 									-- Write to DOWN
@@ -304,9 +312,11 @@ begin
 								-- Read value from DOWN
 								values((head_ptr + 1) mod buffer_length) <= i_down;
 								head_ptr <= (head_ptr + 1) mod buffer_length;
+								count <= count + 1;
 							elsif o_up_active = '1' and i_up_active = '1' then
 								-- Written value to UP
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								count <= count - 1;
 							else
 								-- Do nothing
 							end if;
