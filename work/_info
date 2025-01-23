@@ -1,0 +1,51 @@
+m255
+K4
+z2
+13
+!s112 1.1
+!i10d 8192
+!i10e 25
+!i10f 100
+cModel Technology
+Z0 dC:/Users/jorlap/TIS-100-FPGA
+Etis_node
+Z1 w1733437776
+Z2 DPx4 ieee 11 numeric_std 0 22 :ASDNFgHXf_ih3J@9F3Ze1
+Z3 DPx3 std 6 textio 0 22 zE1`LPoLg^DX3Oz^4Fj1K3
+Z4 DPx4 ieee 14 std_logic_1164 0 22 eNV`TJ_GofJTzYa?f<@Oe1
+R0
+Z5 8C:\Users\jorlap\TIS-100-FPGA\tis_node.vhd
+Z6 FC:\Users\jorlap\TIS-100-FPGA\tis_node.vhd
+l0
+L6
+VYcNF790DZldI>8h@;5JQe0
+!s100 U0N9;VeZE;Bd2I@S5`X4A0
+Z7 OV;C;10.5b;63
+33
+Z8 !s110 1733437789
+!i10b 1
+Z9 !s108 1733437789.000000
+Z10 !s90 C:\Users\jorlap\TIS-100-FPGA\tis_node.vhd|-work|work|-2008|
+Z11 !s107 C:\Users\jorlap\TIS-100-FPGA\tis_node.vhd|
+!i113 1
+Z12 o-work work -2008
+Z13 tExplicit 1 CvgOpt 0
+Artl
+R2
+R3
+R4
+DEx4 work 8 tis_node 0 22 YcNF790DZldI>8h@;5JQe0
+l57
+L40
+V0GI55l0:zW<@;LOh7=gm53
+!s100 JBKeJgo`bj7NSB^GcVmY^3
+R7
+33
+R8
+!i10b 1
+R9
+R10
+R11
+!i113 1
+R12
+R13
