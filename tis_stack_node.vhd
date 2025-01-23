@@ -119,14 +119,21 @@ begin
 
 			if tis_active then
 				-- Update state
-				with node_state select node_state <=
-					TIS_RUN    when TIS_FINISH,
-					TIS_LEFT   when TIS_RUN,
-					TIS_RIGHT  when TIS_LEFT,
-					TIS_DOWN   when TIS_RIGHT,
-					TIS_UP     when TIS_DOWN,
-					TIS_FINISH when TIS_UP;
-
+				case node_state is
+					when TIS_RUN =>    
+						node_state <= TIS_FINISH;
+					when TIS_LEFT =>   
+						node_state <= TIS_RUN;
+					when TIS_RIGHT =>  
+						node_state <= TIS_LEFT;
+					when TIS_DOWN =>   
+						node_state <= TIS_RIGHT;
+					when TIS_UP =>     
+						node_state <= TIS_DOWN;
+					when TIS_FINISH => 
+						node_state <= TIS_UP;
+				end case;
+				
 				-- Default I/O state
 				o_left_active <= '0';
 				o_right_active <= '0';
