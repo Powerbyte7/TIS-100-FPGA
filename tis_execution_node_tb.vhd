@@ -43,27 +43,27 @@ architecture rtl of tis_execution_node_tb is
 	-- TIS signals
 	signal tis_active_tb : std_logic;
 	-- Left conduit
-	signal i_left_tb        : integer range -999 to 999 := 0;
-	signal i_left_active_tb : std_logic                     := '0';
-	signal o_left_tb        : integer range -999 to 999;
+	signal i_left_tb        : std_logic_vector(10 downto 0);
+	signal i_left_active_tb : std_logic := '0';
+	signal o_left_tb        : std_logic_vector(10 downto 0);
 	signal o_left_active_tb : std_logic;
 	-- Right conduit
-	signal i_right_tb        : integer range -999 to 999 := 0;
-	signal i_right_active_tb : std_logic                     := '0';
-	signal o_right_tb        : integer range -999 to 999;
+	signal i_right_tb        : std_logic_vector(10 downto 0);
+	signal i_right_active_tb : std_logic := '0';
+	signal o_right_tb        : std_logic_vector(10 downto 0);
 	signal o_right_active_tb : std_logic;
 	-- Up conduit
-	signal i_up_tb        : integer range -999 to 999 := 0;
-	signal i_up_active_tb : std_logic                     := '0';
-	signal o_up_tb        : integer range -999 to 999;
+	signal i_up_tb        : std_logic_vector(10 downto 0);
+	signal i_up_active_tb : std_logic := '0';
+	signal o_up_tb        : std_logic_vector(10 downto 0);
 	signal o_up_active_tb : std_logic;
 	-- Down conduit
-	signal i_down_tb        : integer range -999 to 999 := 0;
-	signal i_down_active_tb : std_logic                     := '0';
-	signal o_down_tb        : integer range -999 to 999;
+	signal i_down_tb        : std_logic_vector(10 downto 0);
+	signal i_down_active_tb : std_logic := '0';
+	signal o_down_tb        : std_logic_vector(10 downto 0);
 	signal o_down_active_tb : std_logic;
-	signal acc_tb           : integer range - 999 to 999;
-	signal bak_tb           : integer range - 999 to 999;
+	signal acc_tb           : std_logic_vector(10 downto 0);
+	signal bak_tb           : std_logic_vector(10 downto 0);
 	signal pc_tb            : unsigned(3 downto 0);
 begin
 	-- Port map
@@ -174,18 +174,18 @@ begin
 		tis_active_tb <= '1';
 		assert pc_tb = "0000" report "INIT: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- NOP
-		assert acc_tb = 0 report "INIT: Expecting ACC = 0, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "INIT: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "INIT: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "INIT: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		assert pc_tb = "0001" report "NOP: Expecting PC = 1, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- ADD 421
-		assert acc_tb = 421 report "ADD 421: Expecting ACC = 421, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "ADD 421: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(421, acc_tb'length)) report "ADD 421: Expecting ACC = 421, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "ADD 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		assert pc_tb = "0010" report "ADD 421: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- SUB 421
-		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		-- Simulate lack of input
 		TisPulse(clock_tb); -- ADD ANY
@@ -194,35 +194,35 @@ begin
 
 		-- Set input on left
 		i_left_active_tb <= '1';
-		i_left_tb <= 619;
+		i_left_tb <= std_logic_vector(to_signed(619, i_left_tb'length));
 		assert pc_tb = "0011" report "SUB 421: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- ADD ANY
-		assert acc_tb = 619 report "ADD ANY: Expecting ACC = 619, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "ADD ANY: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(619, acc_tb'length)) report "ADD ANY: Expecting ACC = 619, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "ADD ANY: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		assert pc_tb = "0100" report "SUB NIL: Expecting PC = 4, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- SUB NIL
-		assert acc_tb = 619 report "SUB NIL: Expecting ACC = 619, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "SUB NIL: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(619, acc_tb'length)) report "SUB NIL: Expecting ACC = 619, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "SUB NIL: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		assert pc_tb = "0101" report "MOV 744, ACC: Expecting PC = 5, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- MOV 744, ACC
-		assert acc_tb = 744 report "MOV 744, ACC: Expecting ACC = 744, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "MOV 744, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(744, acc_tb'length)) report "MOV 744, ACC: Expecting ACC = 744, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "MOV 744, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		assert pc_tb = "0110" report "JNZ 8: Expecting PC = 6, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- JNZ 8
-		assert acc_tb = 744 report "JNZ 8: Expecting ACC = 744, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "JNZ 8: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(744, acc_tb'length)) report "JNZ 8: Expecting ACC = 744, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "JNZ 8: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		-- JNZ 8 should have jumped over insturction 7 here
 		assert pc_tb = "1000" report "MOV 456, ACC: Expecting PC = 8, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- MOV 456, ACC
-		assert acc_tb = 456 report "MOV 456, ACC: Expecting ACC = 456, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "MOV 456, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = std_logic_vector(to_signed(456, acc_tb'length)) report "MOV 456, ACC: Expecting ACC = 456, got " & to_string(acc_tb);
+		assert bak_tb = std_logic_vector(to_signed(0, acc_tb'length)) report "MOV 456, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		TisPulse(clock_tb); -- MOV 456, ACC
-		assert acc_tb = 456 report "Expecting ACC = 456, got " & to_string(acc_tb);
+		assert acc_tb = std_logic_vector(to_signed(456, acc_tb'length)) report "Expecting ACC = 456, got " & to_string(acc_tb);
 
 		report "Testbench success!!!" severity note;
 		std.env.stop;

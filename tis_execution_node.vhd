@@ -15,28 +15,28 @@ entity tis_execution_node is
 		-- Used to avoid early start without initialized program
 		tis_active     : in  std_logic;
 		-- Left conduit
-		i_left         : in  integer range - 999 to 999;
+		i_left         : in  std_logic_vector(10 downto 0);
 		i_left_active  : in  std_logic;
-		o_left         : out integer range - 999 to 999;
+		o_left         : out std_logic_vector(10 downto 0);
 		o_left_active  : out std_logic;
 		-- Right conduit
-		i_right        : in  integer range - 999 to 999;
+		i_right        : in  std_logic_vector(10 downto 0);
 		i_right_active : in  std_logic;
-		o_right        : out integer range - 999 to 999;
+		o_right        : out std_logic_vector(10 downto 0);
 		o_right_active : out std_logic;
 		-- Up conduit
-		i_up           : in  integer range - 999 to 999;
+		i_up           : in  std_logic_vector(10 downto 0);
 		i_up_active    : in  std_logic;
-		o_up           : out integer range - 999 to 999;
+		o_up           : out std_logic_vector(10 downto 0);
 		o_up_active    : out std_logic;
 		-- Down conduit
-		i_down         : in  integer range - 999 to 999;
+		i_down         : in  std_logic_vector(10 downto 0);
 		i_down_active  : in  std_logic;
-		o_down         : out integer range - 999 to 999;
+		o_down         : out std_logic_vector(10 downto 0);
 		o_down_active  : out std_logic;
 		-- For debugging purposes
-		debug_acc      : out integer range - 999 to 999;
-		debug_bak      : out integer range - 999 to 999;
+		debug_acc      : out std_logic_vector(10 downto 0);
+		debug_bak      : out std_logic_vector(10 downto 0);
 		debug_pc       : out unsigned(3 downto 0)
 	);
 end entity;
@@ -133,8 +133,8 @@ architecture rtl of tis_execution_node is
 
 begin
 	Q_export  <= regs(0);
-	debug_acc <= node_acc;
-	debug_bak <= node_bak;
+	debug_acc <= std_logic_vector(to_signed(node_acc, debug_acc'length));
+	debug_bak <= std_logic_vector(to_signed(node_bak, debug_acc'length));
 	debug_pc  <= node_pc;
 
 	last_instruction_address <= unsigned(regs(0)(3 downto 0));
@@ -166,10 +166,10 @@ begin
 		end if;
 	end process;
 
-	o_left  <= node_dst;
-	o_right <= node_dst;
-	o_up    <= node_dst;
-	o_down  <= node_dst;
+	o_left  <= std_logic_vector(to_signed(node_dst, o_left'length));
+	o_right <= std_logic_vector(to_signed(node_dst, o_right'length));
+	o_up    <= std_logic_vector(to_signed(node_dst, o_up'length));
+	o_down  <= std_logic_vector(to_signed(node_dst, o_down'length));
 
 	processor: process (clock, resetn)
 	begin
@@ -190,7 +190,7 @@ begin
 				case node_state is
 					when TIS_RUN =>
 						-- DEBUG
-						report "PC: " & to_string(to_integer(node_pc)) & " ACC: " & to_string(node_acc) severity note;
+						-- report "PC: " & to_string(to_integer(node_pc)) & " ACC: " & to_string(node_acc) severity note;
 
 						-- Only proceed without ongoing I/O operation
 						if (node_io_read = '0') and (node_io_write = '0') then
@@ -221,12 +221,12 @@ begin
 									else
 										-- ADD or SUB with immediate operand
 										if current_instruction(10) = '1' then
-											report "OPC: SUB " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
+											-- report "OPC: SUB " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
 										else
-											report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
+											-- report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
@@ -305,7 +305,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_left_active = '1') and ((node_src_reg = LEFT) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= i_left;
+								node_src <= to_integer(signed(i_left));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= LEFT;
@@ -341,7 +341,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_right_active = '1') and ((node_src_reg = RIGHT) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= i_right;
+								node_src <= to_integer(signed(i_right));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= RIGHT;
@@ -377,7 +377,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_up_active = '1') and ((node_src_reg = UP) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= i_up;
+								node_src <= to_integer(signed(i_up));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= UP;
@@ -407,22 +407,22 @@ begin
 						if node_io_read = '1' then
 							if (i_down_active = '1') and ((node_src_reg = DOWN) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= i_up;
+								node_src <= to_integer(signed(i_up));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= DOWN;
 								end if;
 								-- Update program counter
 								if current_instruction(15 downto 3) = "0110000000000" then -- JRO
-									if (to_integer(node_pc) + i_up) > to_integer(last_instruction_address) then
+									if (to_integer(node_pc) + to_integer(signed(i_up))) > to_integer(last_instruction_address) then
 										-- Clamp to maximum address
 										node_pc <= last_instruction_address;
-									elsif (to_integer(node_pc) + i_up) < 0 then
+									elsif (to_integer(node_pc) + to_integer(signed(i_up))) < 0 then
 										-- Clamp to minimum address
 										node_pc <= (others => '0');
 									else
 										-- Update address
-										node_pc <= to_unsigned(to_integer(node_pc) + i_up, node_pc'length);
+										node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_up)), node_pc'length);
 									end if;
 								elsif current_instruction(15 downto 9) = "0111000" then -- JMP
 									-- Check JMP conditions
@@ -505,15 +505,15 @@ begin
 						else
 							-- Update program counter
 							if current_instruction(15 downto 3) = "0110000000000" then -- JRO
-								if (to_integer(node_pc) + i_up) > to_integer(last_instruction_address) then
+								if (to_integer(node_pc) + to_integer(signed(i_up))) > to_integer(last_instruction_address) then
 									-- Clamp to maximum address
 									node_pc <= last_instruction_address;
-								elsif (to_integer(node_pc) + i_up) < 0 then
+								elsif (to_integer(node_pc) + to_integer(signed(i_up))) < 0 then
 									-- Clamp to minimum address
 									node_pc <= (others => '0');
 								else
 									-- Update address
-									node_pc <= to_unsigned(to_integer(node_pc) + i_up, node_pc'length);
+									node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_up)), node_pc'length);
 								end if;
 							elsif current_instruction(15 downto 9) = "0111000" then -- JMP
 								-- Check JMP conditions
