@@ -49,21 +49,23 @@ OS_STK    task2_stk[TASK_STACKSIZE];
 #define TIS_OUTPUT ((volatile uint16_t*) (TIS_STACK_OUTPUT_BASE+0x2))
 
 
-void task1(void* pdata)
+void input(void* pdata)
 {
+  static char number[16] = "";
   static int cnt = 0;
   while (1)
   { 
-	  puts("Writing number");
+	  sprintf(number, "> %d", cnt);
+	  puts(number);
 	  *TIS_INPUT = cnt;
 	  cnt += 1;
     OSTimeDlyHMSM(0, 0, 1, 0);
   }
 }
 
-void task2(void* pdata)
+void output(void* pdata)
 {
-  static char number[10] = "";
+  static char number[16] = "";
   while (1)
   { 
     OSTimeDlyHMSM(0, 0, 0, 100);
@@ -71,7 +73,7 @@ void task2(void* pdata)
     int val = *TIS_OUTPUT;
 
     if (val != 0xFFFF) {
-    	sprintf(number, "%d", val);
+    	sprintf(number, "< %d", val);
     	puts(number);
     }
   }
@@ -80,15 +82,15 @@ void task2(void* pdata)
 int main(void)
 {
 
-	*TIS_NODE_CONFIG = 0; // 1 Instruction
-	TIS_NODE_INSTR[0] = 0xD802; // MOV UP, DOWN
+//	*TIS_NODE_CONFIG = 0; // 1 Instruction
+//	TIS_NODE_INSTR[0] = 0xD802; // MOV UP, DOWN
 
-//	*TIS_NODE_CONFIG = 2; // 3 Instructions
-//	 TIS_NODE_INSTR[0] = 0xC802; // MOV UP, ACC
-//	 TIS_NODE_INSTR[1] = 0x0801; // ADD ANY
-//	 TIS_NODE_INSTR[2] = 0xD801; // MOV ACC, DOWN
+	*TIS_NODE_CONFIG = 2; // 3 Instructions
+	 TIS_NODE_INSTR[0] = 0xC802; // MOV UP, ACC
+	 TIS_NODE_INSTR[1] = 0x0801; // ADD ACC (Multiply each number by 2)
+	 TIS_NODE_INSTR[2] = 0xD801; // MOV ACC, DOWN
 
-  OSTaskCreateExt(task1,
+  OSTaskCreateExt(input,
                   NULL,
                   (void *)&task1_stk[TASK_STACKSIZE-1],
                   TASK1_PRIORITY,
@@ -99,7 +101,7 @@ int main(void)
                   0);
               
                
-  OSTaskCreateExt(task2,
+  OSTaskCreateExt(output,
                   NULL,
                   (void *)&task2_stk[TASK_STACKSIZE-1],
                   TASK2_PRIORITY,

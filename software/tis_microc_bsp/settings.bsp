@@ -2,8 +2,8 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>ucosii</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>Jan 20, 2025 11:50:55 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1737413455740</BspGeneratedUnixTimeStamp>
+        <BspGeneratedTimeStamp>Jan 21, 2025 8:58:30 PM</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1737489510872</BspGeneratedUnixTimeStamp>
         <BspGeneratedLocation>C:\Users\jorlap\TIS-100-FPGA\software\tis_microc_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
         <SopcDesignFile>..\..\tis_system.sopcinfo</SopcDesignFile>
