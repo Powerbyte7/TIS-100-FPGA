@@ -18,24 +18,24 @@ entity tis_stack_node is
 		-- Used to avoid early start without initialized program
 		tis_active     : in  std_logic;
 		-- Left conduit
-		i_left         : in  integer range - 999 to 999;
+		i_left         : in  std_logic_vector(10 downto 0);
 		i_left_active  : in  std_logic;
-		o_left         : out integer range - 999 to 999;
+		o_left         : out std_logic_vector(10 downto 0);
 		o_left_active  : out std_logic;
 		-- Right conduit
-		i_right        : in  integer range - 999 to 999;
+		i_right        : in  std_logic_vector(10 downto 0);
 		i_right_active : in  std_logic;
-		o_right        : out integer range - 999 to 999;
+		o_right        : out std_logic_vector(10 downto 0);
 		o_right_active : out std_logic;
 		-- Up conduit
-		i_up           : in  integer range - 999 to 999;
+		i_up           : in  std_logic_vector(10 downto 0);
 		i_up_active    : in  std_logic;
-		o_up           : out integer range - 999 to 999;
+		o_up           : out std_logic_vector(10 downto 0);
 		o_up_active    : out std_logic;
 		-- Down conduit
-		i_down         : in  integer range - 999 to 999;
+		i_down         : in  std_logic_vector(10 downto 0);
 		i_down_active  : in  std_logic;
-		o_down         : out integer range - 999 to 999;
+		o_down         : out std_logic_vector(10 downto 0);
 		o_down_active  : out std_logic
 	);
 end entity;
@@ -49,7 +49,7 @@ architecture rtl of tis_stack_node is
 	type tis_state is (TIS_RUN, TIS_LEFT, TIS_RIGHT, TIS_UP, TIS_DOWN, TIS_FINISH);
 
 	signal node_state  : tis_state := TIS_RUN; -- Write/Read direction of node
-	signal node_output : integer range - 999 to 999;
+	signal node_output : std_logic_vector(10 downto 0);
 
 	signal tail_ptr : integer range 0 to buffer_length - 1 := 0; -- Written to (-) and read by (-) memory master
 	signal head_ptr : integer range 0 to buffer_length - 1 := 0; -- Written to (+) and read by (+) other nodes
@@ -132,7 +132,7 @@ begin
 				o_right_active <= '0';
 				o_up_active <= '0';
 				o_down_active <= '0';
-				node_output <= values(head_ptr);
+				node_output <= std_logic_vector(to_signed(values(head_ptr), node_output'length));
 
 				-- Stack I/O inactive when memory map I/O is ongoing
 				if read = '0' and write = '0' then
@@ -155,14 +155,14 @@ begin
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
 								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
 								-- Store value
-								values(head_ptr) <= i_left;
+								values(head_ptr) <= to_tis_integer(signed(i_left));
 								-- Read/Write
 								o_left_active <= '1';
 								o_right_active <= '1';
 
 							elsif o_left_active = '1' and i_left_active = '1' then
 								-- Read value from LEFT
-								values((head_ptr + 1) mod buffer_length) <= i_left;
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_left));
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 								-- Read if buffer can take another value
@@ -206,14 +206,14 @@ begin
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
 								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
 								-- Store value
-								values(head_ptr) <= i_right;
+								values(head_ptr) <= to_tis_integer(signed(i_right));
 								-- Read/Write
 								o_right_active <= '1';
 								o_down_active <= '1';
 
 							elsif o_right_active = '1' and i_right_active = '1' then
 								-- Read value from RIGHT
-								values((head_ptr + 1) mod buffer_length) <= i_right;
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_right));
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 								-- Read if buffer can take another value
@@ -258,14 +258,14 @@ begin
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
 								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
 								-- Store value
-								values(head_ptr) <= i_down;
+								values(head_ptr) <= to_tis_integer(signed(i_down));
 								-- Read/Write
 								o_down_active <= '1';
 								o_up_active <= '1';
 
 							elsif o_down_active = '1' and i_down_active = '1' then
 								-- Read value from DOWN
-								values((head_ptr + 1) mod buffer_length) <= i_down;
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_down));
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 								-- Read if buffer can take another value
@@ -308,14 +308,14 @@ begin
 							if o_down_active = '1' and i_down_active = '1' and o_up_active = '1' and i_up_active = '1' then
 								-- We already know read and write are possible here
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
-								values(head_ptr) <= i_down;
+								values(head_ptr) <= to_tis_integer(signed(i_up));
 							elsif o_down_active = '1' and i_down_active = '1' then
-								-- Read value from DOWN
-								values((head_ptr + 1) mod buffer_length) <= i_down;
+								-- Read value from UP
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_up));
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 							elsif o_up_active = '1' and i_up_active = '1' then
-								-- Written value to UP
+								-- Written value to DOWN
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
 								count <= count - 1;
 							else

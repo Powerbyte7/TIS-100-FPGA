@@ -18,24 +18,24 @@ architecture rtl of tis_stack_node_tb is
 	-- Used to avoid early start without initialized program
 	signal tis_active_tb : std_logic := '0';
 	-- Left conduit
-	signal i_left_tb        : integer range - 999 to 999 := 0;
-	signal i_left_active_tb : std_logic                  := '0';
-	signal o_left_tb        : integer range - 999 to 999;
+	signal i_left_tb        : std_logic_vector(10 downto 0);
+	signal i_left_active_tb : std_logic := '0';
+	signal o_left_tb        : std_logic_vector(10 downto 0);
 	signal o_left_active_tb : std_logic;
 	-- Right conduit
-	signal i_right_tb        : integer range - 999 to 999 := 0;
-	signal i_right_active_tb : std_logic                  := '0';
-	signal o_right_tb        : integer range - 999 to 999;
+	signal i_right_tb        : std_logic_vector(10 downto 0);
+	signal i_right_active_tb : std_logic := '0';
+	signal o_right_tb        : std_logic_vector(10 downto 0);
 	signal o_right_active_tb : std_logic;
 	-- Up conduit
-	signal i_up_tb        : integer range - 999 to 999 := 0;
-	signal i_up_active_tb : std_logic                  := '0';
-	signal o_up_tb        : integer range - 999 to 999;
+	signal i_up_tb        : std_logic_vector(10 downto 0);
+	signal i_up_active_tb : std_logic := '0';
+	signal o_up_tb        : std_logic_vector(10 downto 0);
 	signal o_up_active_tb : std_logic;
 	-- Down conduit
-	signal i_down_tb        : integer range - 999 to 999 := 0;
-	signal i_down_active_tb : std_logic                  := '0';
-	signal o_down_tb        : integer range - 999 to 999;
+	signal i_down_tb        : std_logic_vector(10 downto 0);
+	signal i_down_active_tb : std_logic := '0';
+	signal o_down_tb        : std_logic_vector(10 downto 0);
 	signal o_down_active_tb : std_logic;
 
 	-- Signle rising edge
