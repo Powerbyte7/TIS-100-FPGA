@@ -120,17 +120,17 @@ begin
 			if tis_active then
 				-- Update state
 				case node_state is
-					when TIS_RUN =>    
+					when TIS_RUN =>
 						node_state <= TIS_LEFT;
-					when TIS_LEFT =>   
+					when TIS_LEFT =>
 						node_state <= TIS_RIGHT;
-					when TIS_RIGHT =>  
-						node_state <= TIS_DOWN;
-					when TIS_DOWN =>   
+					when TIS_RIGHT =>
 						node_state <= TIS_UP;
-					when TIS_UP =>     
+					when TIS_UP =>
+						node_state <= TIS_DOWN;
+					when TIS_DOWN =>
 						node_state <= TIS_FINISH;
-					when TIS_FINISH => 
+					when TIS_FINISH =>
 						node_state <= TIS_RUN;
 				end case;
 
@@ -173,7 +173,7 @@ begin
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 								-- Read if buffer can take another value
-								if not (count = buffer_length - 1) then
+								if count < (buffer_length - 1) then
 									-- Read from RIGHT
 									o_right_active <= '1';
 								end if;
@@ -185,7 +185,7 @@ begin
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
 								count <= count - 1;
 								-- Check if any values are left in buffer
-								if not (count = 0) then
+								if count > 1 then
 									-- Write to LEFT
 									o_left_active <= '1';
 								end if;
@@ -206,17 +206,17 @@ begin
 									o_right_active <= '1';
 								end if;
 							end if;
-						when TIS_DOWN =>
+						when TIS_UP =>
 							-- Check previous I/O result
-							if o_right_active = '1' and i_right_active = '1' and o_down_active = '1' and i_down_active = '1' then
+							if o_left_active = '1' and i_left_active = '1' and o_right_active = '1' and i_right_active = '1' then
 								-- We already know read and write are possible here
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
 								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
 								-- Store value
 								values(head_ptr) <= to_tis_integer(signed(i_right));
 								-- Read/Write
-								o_right_active <= '1';
 								o_down_active <= '1';
+								o_up_active <= '1';
 
 							elsif o_right_active = '1' and i_right_active = '1' then
 								-- Read value from RIGHT
@@ -224,71 +224,19 @@ begin
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 								-- Read if buffer can take another value
-								if not (count = buffer_length - 1) then
-									-- Read from DOWN
-									o_down_active <= '1';
-								end if;
-								-- Write to RIGHT
-								o_right_active <= '1';
-
-							elsif o_down_active = '1' and i_down_active = '1' then
-								-- Written value to DOWN
-								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
-								count <= count - 1;
-								-- Check if any values are left in buffer
-								if not (count = 0) then
-									-- Write to RIGHT
-									o_right_active <= '1';
-								end if;
-								-- Read from DOWN
-								o_down_active <= '1';
-
-							else -- No previous I/O
-
-								-- Write if a value is still left in buffer
-								if not (count = 0) then
-									-- Write to RIGHT
-									o_right_active <= '1';
-								end if;
-
-								-- Read if buffer can take another value
-								if not (count = buffer_length) then
-									-- Read from DOWN
-									o_down_active <= '1';
-								end if;
-							end if;
-
-						when TIS_UP =>
-							-- Check previous I/O result
-							if o_down_active = '1' and i_down_active = '1' and o_up_active = '1' and i_up_active = '1' then
-								-- We already know read and write are possible here
-								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
-								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
-								-- Store value
-								values(head_ptr) <= to_tis_integer(signed(i_down));
-								-- Read/Write
-								o_down_active <= '1';
-								o_up_active <= '1';
-
-							elsif o_down_active = '1' and i_down_active = '1' then
-								-- Read value from DOWN
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_down));
-								head_ptr <= (head_ptr + 1) mod buffer_length;
-								count <= count + 1;
-								-- Read if buffer can take another value
-								if not (count = buffer_length - 1) then
+								if count < (buffer_length - 1) then
 									-- Read from UP
 									o_up_active <= '1';
 								end if;
 								-- Write to DOWN
 								o_down_active <= '1';
 
-							elsif o_up_active = '1' and i_up_active = '1' then
-								-- Written value to UP
+							elsif o_left_active = '1' and i_left_active = '1' then
+								-- Written value to LEFT
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
 								count <= count - 1;
 								-- Check if any values are left in buffer
-								if not (count = 0) then
+								if count > 1 then
 									-- Write to DOWN
 									o_down_active <= '1';
 								end if;
@@ -310,19 +258,71 @@ begin
 								end if;
 							end if;
 
+						when TIS_DOWN =>
+							-- Check previous I/O result
+							if o_up_active = '1' and i_up_active = '1' and o_down_active = '1' and i_down_active = '1' then
+								-- We already know read and write are possible here
+								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
+								assert not (count = 0 or count = buffer_length) report "The assumption was wrong!" severity failure;
+								-- Store value
+								values(head_ptr) <= to_tis_integer(signed(i_up));
+								-- Read/Write
+								o_up_active <= '1';
+								o_down_active <= '1';
+
+							elsif o_up_active = '1' and i_up_active = '1' then
+								-- Read value from UP
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_up));
+								head_ptr <= (head_ptr + 1) mod buffer_length;
+								count <= count + 1;
+								-- Read if buffer can take another value
+								if count < (buffer_length - 1) then
+									-- Read from DOWN
+									o_down_active <= '1';
+								end if;
+								-- Write to UP
+								o_up_active <= '1';
+
+							elsif o_down_active = '1' and i_down_active = '1' then
+								-- Written value to DOWN
+								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								count <= count - 1;
+								-- Check if any values are left in buffer
+								if count > 1 then
+									-- Write to UP
+									o_up_active <= '1';
+								end if;
+								-- Read from DOWN
+								o_down_active <= '1';
+
+							else -- No previous I/O
+
+								-- Write if a value is still left in buffer
+								if not (count = 0) then
+									-- Write to RIGHT
+									o_right_active <= '1';
+								end if;
+
+								-- Read if buffer can take another value
+								if not (count = buffer_length) then
+									-- Read from DOWN
+									o_down_active <= '1';
+								end if;
+							end if;
+
 						when TIS_FINISH =>
 							-- Check previous I/O result
 							if o_down_active = '1' and i_down_active = '1' and o_up_active = '1' and i_up_active = '1' then
 								-- We already know read and write are possible here
 								-- tail_ptr, head_ptr and count stay the same after a simultaneous read/write
-								values(head_ptr) <= to_tis_integer(signed(i_up));
+								values(head_ptr) <= to_tis_integer(signed(i_down));
 							elsif o_down_active = '1' and i_down_active = '1' then
-								-- Read value from UP
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_up));
+								-- Read value from DOWN
+								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_down));
 								head_ptr <= (head_ptr + 1) mod buffer_length;
 								count <= count + 1;
 							elsif o_up_active = '1' and i_up_active = '1' then
-								-- Written value to DOWN
+								-- Written value to UP
 								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
 								count <= count - 1;
 							else
