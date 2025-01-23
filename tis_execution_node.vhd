@@ -5,39 +5,39 @@ library IEEE;
 
 entity tis_execution_node is
 	port (
-		clock, resetn           : in  std_logic;
-		read, write, chipselect : in  std_logic;
-		address                 : in  std_logic_vector(2 downto 0);
-		readdata                : out std_logic_vector(31 downto 0);
-		writedata               : in  std_logic_vector(31 downto 0);
-		byteenable              : in  std_logic_vector(3 downto 0);
-		Q_export                : out std_logic_vector(31 downto 0);
+		clock, resetn  : in  std_logic;
+		read, write    : in  std_logic;
+		address        : in  std_logic_vector(2 downto 0);
+		readdata       : out std_logic_vector(31 downto 0);
+		writedata      : in  std_logic_vector(31 downto 0);
+		byteenable     : in  std_logic_vector(3 downto 0);
+		Q_export       : out std_logic_vector(31 downto 0);
 		-- Used to avoid early start without initialized program
-		tis_active              : in  std_logic;
+		tis_active     : in  std_logic;
 		-- Left conduit
-		i_left                  : in  integer range - 999 to 999;
-		i_left_active           : in  std_logic;
-		o_left                  : out integer range - 999 to 999;
-		o_left_active           : out std_logic;
+		i_left         : in  integer range - 999 to 999;
+		i_left_active  : in  std_logic;
+		o_left         : out integer range - 999 to 999;
+		o_left_active  : out std_logic;
 		-- Right conduit
-		i_right                 : in  integer range - 999 to 999;
-		i_right_active          : in  std_logic;
-		o_right                 : out integer range - 999 to 999;
-		o_right_active          : out std_logic;
+		i_right        : in  integer range - 999 to 999;
+		i_right_active : in  std_logic;
+		o_right        : out integer range - 999 to 999;
+		o_right_active : out std_logic;
 		-- Up conduit
-		i_up                    : in  integer range - 999 to 999;
-		i_up_active             : in  std_logic;
-		o_up                    : out integer range - 999 to 999;
-		o_up_active             : out std_logic;
+		i_up           : in  integer range - 999 to 999;
+		i_up_active    : in  std_logic;
+		o_up           : out integer range - 999 to 999;
+		o_up_active    : out std_logic;
 		-- Down conduit
-		i_down                  : in  integer range - 999 to 999;
-		i_down_active           : in  std_logic;
-		o_down                  : out integer range - 999 to 999;
-		o_down_active           : out std_logic;
+		i_down         : in  integer range - 999 to 999;
+		i_down_active  : in  std_logic;
+		o_down         : out integer range - 999 to 999;
+		o_down_active  : out std_logic;
 		-- For debugging purposes
-		debug_acc               : out integer range - 999 to 999;
-		debug_bak               : out integer range - 999 to 999;
-		debug_pc                : out unsigned(3 downto 0)
+		debug_acc      : out integer range - 999 to 999;
+		debug_bak      : out integer range - 999 to 999;
+		debug_pc       : out unsigned(3 downto 0)
 	);
 end entity;
 
@@ -90,7 +90,7 @@ architecture rtl of tis_execution_node is
 
 	end procedure;
 
-	-- CPU State
+	-- IO State
 	constant NIL   : std_logic_vector(2 downto 0) := "000";
 	constant ACC   : std_logic_vector(2 downto 0) := "001";
 	constant UP    : std_logic_vector(2 downto 0) := "010";
@@ -144,16 +144,14 @@ begin
 		if resetn = '0' then
 			regs <= (others => (others => '0'));
 		elsif rising_edge(clock) then
-			if chipselect = '1' then
-				if read = '1' then
-					readdata <= regs(to_integer(unsigned(address)));
-				elsif write = '1' then
-					for i in 0 to 3 loop
-						if byteenable(i) = '1' then
-							regs(to_integer(unsigned(address)))(i * 8 + 7 downto i * 8) <= writedata(i * 8 + 7 downto i * 8);
-						end if;
-					end loop;
-				end if;
+			if read = '1' then
+				readdata <= regs(to_integer(unsigned(address)));
+			elsif write = '1' then
+				for i in 0 to 3 loop
+					if byteenable(i) = '1' then
+						regs(to_integer(unsigned(address)))(i * 8 + 7 downto i * 8) <= writedata(i * 8 + 7 downto i * 8);
+					end if;
+				end loop;
 			end if;
 		end if;
 	end process;

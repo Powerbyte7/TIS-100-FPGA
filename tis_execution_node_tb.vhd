@@ -74,7 +74,6 @@ begin
 			resetn         => resetn_tb,
 			read           => read_tb,
 			write          => write_tb,
-			chipselect     => chipselect_tb,
 			address        => address_tb,
 			readdata       => readdata_tb,
 			writedata      => writedata_tb,
@@ -106,7 +105,6 @@ begin
 	process
 	begin
 		-- Initialize signals
-		chipselect_tb <= '1';
 		clock_tb <= '0';
 		resetn_tb <= '1'; -- High by default
 		byteenable_tb <= (others => '1');
