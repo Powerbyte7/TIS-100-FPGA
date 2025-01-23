@@ -233,23 +233,11 @@ begin
 									node_io_write <= '1';
 
 									node_dst_reg <= current_instruction(13 downto 11);
+									node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 
 									-- <DST>
-									if current_instruction(13 downto 11) = NIL then
-										-- Do nothing for NIL
-										node_io_write <= '0';
-									elsif current_instruction(13 downto 11) = ACC then
-										node_io_write <= '0';
-										node_acc <= to_integer(signed(current_instruction(10 downto 0)));
-									elsif current_instruction(13 downto 11) = LAST then
-										-- If LAST is NIL, node skip writing
-										if node_last = NIL then
-											node_io_write <= '0';
-										end if;
+									if current_instruction(13 downto 11) = LAST then
 										node_dst_reg <= node_last;
-										node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
-									else
-										node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 									end if;
 								when "11" => -- MOV <SRC>, <DST>
 									node_io_read <= '1';
@@ -272,15 +260,7 @@ begin
 									end if;
 
 									-- <DST>
-									if current_instruction(13 downto 11) = NIL then
-										node_io_write <= '0';
-									elsif current_instruction(13 downto 11) = ACC then
-										node_io_write <= '0';
-									elsif current_instruction(13 downto 11) = LAST then
-										-- If LAST is NIL, node skip writing
-										if node_last = NIL then
-											node_io_write <= '0';
-										end if;
+									if current_instruction(13 downto 11) = LAST then
 										node_dst_reg <= node_last;
 									end if;
 
@@ -426,11 +406,11 @@ begin
 								node_io_read <= '0';
 
 								-- Write to ACC or NIL
-								if node_dst_reg = ACC and node_io_write = '1' then
-									node_acc <= node_io_value;
+								if node_dst_reg = ACC then
 									node_io_write <= '0';
+									node_acc <= node_io_value;
 									IncrementPC(node_pc, last_instruction_address);
-								elsif node_dst_reg = NIL and node_io_write = '1' then
+								elsif node_dst_reg = NIL then
 									node_io_write <= '0';
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
@@ -445,10 +425,12 @@ begin
 								end if;
 
 								-- Write to ACC or NIL
-								if node_dst_reg = ACC then
+								if node_dst_reg = ACC and node_io_write = '1' then
+									node_io_write <= '0';
 									node_acc <= to_integer(signed(i_down));
 									IncrementPC(node_pc, last_instruction_address);
-								elsif node_dst_reg = NIL then
+								elsif node_dst_reg = NIL and node_io_write = '1' then
+									node_io_write <= '0';
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
 
