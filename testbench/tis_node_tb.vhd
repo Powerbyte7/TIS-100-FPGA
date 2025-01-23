@@ -6,7 +6,7 @@ entity tis_node_tb is
 end entity;
 
 architecture rtl of tis_node_tb is
-	component tis_node is
+	component tis_execution_node is
 		port (
 			clock, resetn           : in  std_logic;
 			read, write, chipselect : in  std_logic;
@@ -83,7 +83,7 @@ architecture rtl of tis_node_tb is
 	signal o_down_active_tb : std_logic;
 begin
 	-- Port map
-	left_node: tis_node
+	left_node: tis_execution_node
 		port map (
 
 			clock          => clock_tb,

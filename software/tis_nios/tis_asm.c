@@ -143,7 +143,7 @@ static char asm_operands[] = {
 };
 
 // Instruction identifiers
-// Note: these are partial identifiers that exclude operand varations
+// Note: these are partial identifiers that exclude operands
 static const uint16_t asm_codes[] = {
     [NOP] = 0x0,
     [MOV] = 0x8000,
