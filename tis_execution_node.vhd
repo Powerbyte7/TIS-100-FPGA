@@ -33,7 +33,11 @@ entity tis_execution_node is
 		i_down                  : in  std_logic_vector(10 downto 0);
 		i_down_active           : in  std_logic;
 		o_down                  : out std_logic_vector(10 downto 0);
-		o_down_active           : out std_logic
+		o_down_active           : out std_logic;
+		-- For debugging purposes
+		debug_acc               : out integer range - 999 to 999;
+		debug_bak               : out integer range - 999 to 999;
+		debug_pc                : out unsigned(3 downto 0)
 	);
 end entity;
 
@@ -54,13 +58,13 @@ architecture rtl of tis_execution_node is
 
 	type tis_state is (TIS_RUN, TIS_LEFT, TIS_RIGHT, TIS_UP, TIS_DOWN, TIS_FINISH);
 
-	signal node_state   : tis_state                     := TIS_LEFT; -- Write/Read direction of node
+	signal node_state   : tis_state                     := TIS_RUN; -- Write/Read direction of node
 	signal node_src     : std_logic_vector(10 downto 0) := (others => '0');
 	signal node_src_reg : std_logic_vector(2 downto 0)  := NIL;
 	signal node_dst     : std_logic_vector(10 downto 0) := (others => '0');
 	signal node_dst_reg : std_logic_vector(2 downto 0)  := NIL;
 
-	signal node_io_read : std_logic := '0';
+	signal node_io_read  : std_logic := '0';
 	signal node_io_write : std_logic := '0';
 
 	-- node_last gets set after recieving/writing using ANY
@@ -76,7 +80,10 @@ architecture rtl of tis_execution_node is
 	signal current_instruction : std_logic_vector(15 downto 0);
 
 begin
-	Q_export <= regs(0);
+	Q_export  <= regs(0);
+	debug_acc <= node_acc;
+	debug_bak <= node_bak;
+	debug_pc  <= node_pc;
 
 	memory_bus: process (clock, resetn)
 	begin
@@ -100,22 +107,22 @@ begin
 	instruction_fetch: process (node_pc, regs)
 	begin
 		-- Get the current intstruction by reading address in program counter
-		if node_pc(0) = '0' then
-			current_instruction <= regs(to_integer(node_pc(3 downto 1)))(15 downto 0);
-		elsif node_pc(0) = '1' then
+		if node_pc(0) = '1' then
+			current_instruction <= regs(to_integer(node_pc(3 downto 1)) + 1)(15 downto 0);
+		elsif node_pc(0) = '0' then
 			current_instruction <= regs(to_integer(node_pc(3 downto 1)))(31 downto 16);
 		end if;
 	end process;
 
-	o_left <= node_dst;
+	o_left  <= node_dst;
 	o_right <= node_dst;
-	o_up <= node_dst;
-	o_down <= node_dst;
+	o_up    <= node_dst;
+	o_down  <= node_dst;
 
 	processor: process (clock, resetn)
 	begin
 		if resetn = '0' then
-			node_state <= TIS_LEFT;
+			node_state <= TIS_RUN;
 			node_acc <= 0;
 			node_bak <= 0;
 			node_pc <= (others => '0');
@@ -126,13 +133,12 @@ begin
 			node_dst_reg <= NIL;
 			node_state <= TIS_RUN;
 		elsif rising_edge(clock) then
-			if tis_active then
+			if tis_active = '1' then
 				-- Capture ACC from previous ALU operation
 				case node_state is
 					when TIS_RUN =>
 						-- DEBUG
-						report "PC: " & to_string(node_pc) severity note;
-						report "ACC: " & to_string(node_acc) severity note;
+						report "PC: " & to_string(to_integer(node_pc)) & " ACC: " & to_string(node_acc) severity note;
 
 						-- Only proceed without ongoing I/O operation
 						if (node_io_read = '0') and (node_io_write = '0') then
@@ -162,11 +168,13 @@ begin
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_acc <= node_acc - to_integer(unsigned(current_instruction(9 downto 0)));
+											node_pc <= node_pc + 1;
 										else
 											report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_acc <= node_acc + to_integer(unsigned(current_instruction(9 downto 0)));
+											node_pc <= node_pc + 1;
 										end if;
 									end if;
 								when "10" => -- MOV with immediate operand
@@ -176,7 +184,7 @@ begin
 										node_io_write <= '0';
 									elsif current_instruction(13 downto 11) = ACC then
 										node_io_read <= '0';
-											node_io_write <= '0';
+										node_io_write <= '0';
 										node_acc <= to_integer(signed(current_instruction(10 downto 0)));
 									elsif current_instruction(13 downto 11) = LAST then
 										-- If LAST is 000, node will never complete writing
@@ -201,9 +209,11 @@ begin
 										-- If LAST is 000, node will never complete reading
 										node_src_reg <= node_last;
 									end if;
-								when others => 
+								when others =>
 							end case;
 						end if; -- IO_NONE check
+
+						node_state <= TIS_LEFT;
 					when TIS_LEFT => -- Read LEFT, Write RIGHT
 						-- Default
 						o_left_active <= '0';
@@ -306,7 +316,7 @@ begin
 							end if;
 						end if;
 
-						node_state <= TIS_LEFT;
+						node_state <= TIS_FINISH;
 					when TIS_FINISH =>
 
 						-- Check whether previous read/write was successful
@@ -322,6 +332,10 @@ begin
 								node_io_write <= '0';
 							end if;
 						end if;
+
+						node_state <= TIS_RUN;
+
+					-- TODO: Set node_src
 				end case;
 			end if; -- active
 		end if; -- clk/reset

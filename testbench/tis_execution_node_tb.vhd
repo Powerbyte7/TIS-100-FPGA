@@ -2,10 +2,10 @@ library ieee;
 	use ieee.std_logic_1164.all;
 	use ieee.numeric_std.all;
 
-entity tis_node_tb is
+entity tis_execution_node_tb is
 end entity;
 
-architecture rtl of tis_node_tb is
+architecture rtl of tis_execution_node_tb is
 	component tis_execution_node is
 		port (
 			clock, resetn           : in  std_logic;
@@ -36,12 +36,43 @@ architecture rtl of tis_node_tb is
 			i_down                  : in  std_logic_vector(10 downto 0);
 			i_down_active           : in  std_logic;
 			o_down                  : out std_logic_vector(10 downto 0);
-			o_down_active           : out std_logic
+			o_down_active           : out std_logic;
+			-- For debugging
+			debug_acc               : out integer range - 999 to 999;
+			debug_bak               : out integer range - 999 to 999;
+			debug_pc                : out unsigned(3 downto 0)
 		);
 	end component;
 
+	-- Signle rising edge
 	procedure ClockPulse(signal clk : inout std_logic) is
 	begin
+		wait for 1 ns;
+		clk <= '0';
+		wait for 1 ns;
+		clk <= '1';
+		wait for 1 ns;
+	end procedure;
+
+	-- Full TIS I/O Cycle
+	procedure TisPulse(signal clk : inout std_logic) is
+	begin
+		wait for 1 ns;
+		clk <= '0';
+		wait for 1 ns;
+		clk <= '1';
+		wait for 1 ns;
+		clk <= '0';
+		wait for 1 ns;
+		clk <= '1';
+		wait for 1 ns;
+		clk <= '0';
+		wait for 1 ns;
+		clk <= '1';
+		wait for 1 ns;
+		clk <= '0';
+		wait for 1 ns;
+		clk <= '1';
 		wait for 1 ns;
 		clk <= '0';
 		wait for 1 ns;
@@ -81,6 +112,9 @@ architecture rtl of tis_node_tb is
 	signal i_down_active_tb : std_logic                     := '0';
 	signal o_down_tb        : std_logic_vector(10 downto 0);
 	signal o_down_active_tb : std_logic;
+	signal acc_tb           : integer range - 999 to 999;
+	signal bak_tb           : integer range - 999 to 999;
+	signal pc_tb            : unsigned(3 downto 0);
 begin
 	-- Port map
 	left_node: tis_execution_node
@@ -113,7 +147,10 @@ begin
 			i_down         => i_down_tb,
 			i_down_active  => i_down_active_tb,
 			o_down         => o_down_tb,
-			o_down_active  => o_down_active_tb
+			o_down_active  => o_down_active_tb,
+			debug_acc      => acc_tb,
+			debug_bak      => bak_tb,
+			debug_pc       => pc_tb
 		);
 
 	process
@@ -158,7 +195,7 @@ begin
 		write_tb <= '0';
 		read_tb <= '1';
 		address_tb <= std_logic_vector(to_unsigned(0, address_tb'length));
-		
+
 		-- Validate memory state
 		ClockPulse(clock_tb);
 		assert readdata_tb = x"0000" & x"0006" report "(0) Failed to validate memory" severity error;
@@ -174,6 +211,28 @@ begin
 
 		ClockPulse(clock_tb);
 		assert readdata_tb = x"0C00" & x"0806" report "(3) Failed to validate memory" severity error;
+
+		wait for 1 ns;
+		tis_active_tb <= '1';
+		assert pc_tb = "0000" report "NOP: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- NOP
+		assert acc_tb = 0 report "NOP: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "NOP: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0001" report "NOP: Expecting PC = 1, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- ADD 421
+		assert acc_tb = 421 report "ADD 421: Expecting ACC = 421, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "ADD 421: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0010" report "NOP: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- SUB 421
+		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0011" report "NOP: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- ADD ANY
+		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		report "Testbench success!!!" severity note;
 		std.env.stop;
