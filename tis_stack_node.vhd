@@ -88,6 +88,7 @@ begin
 			count <= 0;
 			tail_ptr <= 0;
 			head_ptr <= 0;
+			readdata <= (others => '1');
 			for i in 0 to buffer_length - 1 loop
 				values(i) <= 0;
 			end loop;
