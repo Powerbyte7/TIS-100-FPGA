@@ -121,17 +121,17 @@ begin
 				-- Update state
 				case node_state is
 					when TIS_RUN =>    
-						node_state <= TIS_FINISH;
-					when TIS_LEFT =>   
-						node_state <= TIS_RUN;
-					when TIS_RIGHT =>  
 						node_state <= TIS_LEFT;
-					when TIS_DOWN =>   
+					when TIS_LEFT =>   
 						node_state <= TIS_RIGHT;
-					when TIS_UP =>     
+					when TIS_RIGHT =>  
 						node_state <= TIS_DOWN;
-					when TIS_FINISH => 
+					when TIS_DOWN =>   
 						node_state <= TIS_UP;
+					when TIS_UP =>     
+						node_state <= TIS_FINISH;
+					when TIS_FINISH => 
+						node_state <= TIS_RUN;
 				end case;
 
 				-- Default I/O state
