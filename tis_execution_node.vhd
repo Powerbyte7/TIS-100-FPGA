@@ -161,7 +161,7 @@ begin
 		-- Get the current intstruction by reading address in program counter
 		if node_pc(0) = '0' then
 			current_instruction <= regs(to_integer(node_pc(3 downto 1)))(31 downto 16);
-		elsif node_pc(0) = '1' then
+		else
 			current_instruction <= regs(to_integer(node_pc(3 downto 1)) + 1)(15 downto 0);
 		end if;
 	end process;
