@@ -109,11 +109,10 @@ architecture rtl of tis_execution_node is
 
 	type tis_state is (TIS_RUN, TIS_LEFT, TIS_RIGHT, TIS_UP, TIS_DOWN, TIS_FINISH);
 
-	signal node_state   : tis_state                    := TIS_RUN; -- Write/Read direction of node
-	signal node_src     : integer range - 999 to 999   := 0;
-	signal node_src_reg : std_logic_vector(2 downto 0) := NIL;
-	signal node_dst     : integer range - 999 to 999   := 0;
-	signal node_dst_reg : std_logic_vector(2 downto 0) := NIL;
+	signal node_state    : tis_state                    := TIS_RUN; -- Write/Read direction of node
+	signal node_io_value : integer range - 999 to 999   := 0;
+	signal node_src_reg  : std_logic_vector(2 downto 0) := NIL;
+	signal node_dst_reg  : std_logic_vector(2 downto 0) := NIL;
 
 	signal node_io_read  : std_logic := '0';
 	signal node_io_write : std_logic := '0';
@@ -166,10 +165,10 @@ begin
 		end if;
 	end process;
 
-	o_left  <= std_logic_vector(to_signed(node_dst, o_left'length));
-	o_right <= std_logic_vector(to_signed(node_dst, o_right'length));
-	o_up    <= std_logic_vector(to_signed(node_dst, o_up'length));
-	o_down  <= std_logic_vector(to_signed(node_dst, o_down'length));
+	o_left  <= std_logic_vector(to_signed(node_io_value, o_left'length));
+	o_right <= std_logic_vector(to_signed(node_io_value, o_right'length));
+	o_up    <= std_logic_vector(to_signed(node_io_value, o_up'length));
+	o_down  <= std_logic_vector(to_signed(node_io_value, o_down'length));
 
 	processor: process (clock, resetn)
 	begin
@@ -179,9 +178,9 @@ begin
 			node_bak <= 0;
 			node_pc <= (others => '0');
 			node_last <= NIL;
-			node_src <= 0;
+			node_io_value <= 0;
 			node_src_reg <= NIL;
-			node_dst <= 0;
+			node_io_value <= 0;
 			node_dst_reg <= NIL;
 			node_state <= TIS_RUN;
 		elsif rising_edge(clock) then
@@ -203,14 +202,14 @@ begin
 										-- ADD or SUB with register
 										if current_instruction(2 downto 0) = NIL then
 											-- Do nothing for NIL
-											node_src <= 0;
+											node_io_value <= 0;
 										elsif current_instruction(2 downto 0) = ACC then
-											node_src <= node_acc;
+											node_io_value <= node_acc;
 										elsif current_instruction(2 downto 0) = LAST then
 											-- If LAST is NIL, node will read 0
 											if node_last = NIL then
 												node_io_read <= '0';
-												node_src <= 0;
+												node_io_value <= 0;
 											else
 												node_io_read <= '1';
 											end if;
@@ -223,10 +222,10 @@ begin
 										-- ADD or SUB with immediate operand
 										if current_instruction(10) = '1' then
 											-- report "OPC: SUB " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
-											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
+											node_io_value <= to_integer(unsigned(current_instruction(9 downto 0)));
 										else
 											-- report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
-											node_src <= to_integer(unsigned(current_instruction(9 downto 0)));
+											node_io_value <= to_integer(unsigned(current_instruction(9 downto 0)));
 										end if;
 									end if;
 								when "10" => -- MOV #<imm10>, <DST>
@@ -248,9 +247,9 @@ begin
 											node_io_write <= '0';
 										end if;
 										node_dst_reg <= node_last;
-										node_dst <= to_integer(signed(current_instruction(10 downto 0)));
+										node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 									else
-										node_dst <= to_integer(signed(current_instruction(10 downto 0)));
+										node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 									end if;
 								when "11" => -- MOV <SRC>, <DST>
 									node_io_read <= '1';
@@ -261,13 +260,13 @@ begin
 
 									-- <SRC>
 									if current_instruction(2 downto 0) = NIL then
-										node_src <= 0;
+										node_io_value <= 0;
 									elsif current_instruction(2 downto 0) = ACC then
-										node_src <= node_acc;
+										node_io_value <= node_acc;
 									elsif current_instruction(2 downto 0) = LAST then
 										-- If LAST is NIL, node will read 0
 										if node_last = NIL then
-											node_src <= 0;
+											node_io_value <= 0;
 										end if;
 										node_src_reg <= node_last;
 									end if;
@@ -322,7 +321,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_left_active = '1') and ((node_src_reg = LEFT) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= to_integer(signed(i_left));
+								node_io_value <= to_integer(signed(i_left));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= LEFT;
@@ -358,7 +357,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_right_active = '1') and ((node_src_reg = RIGHT) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= to_integer(signed(i_right));
+								node_io_value <= to_integer(signed(i_right));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= RIGHT;
@@ -394,7 +393,7 @@ begin
 							-- Check whether previous read was successful
 							if (i_up_active = '1') and ((node_src_reg = UP) or (node_src_reg = ANY)) then
 								-- READ success!
-								node_src <= to_integer(signed(i_up));
+								node_io_value <= to_integer(signed(i_up));
 								node_io_read <= '0';
 								if node_src_reg = ANY then
 									node_last <= UP;
@@ -427,10 +426,12 @@ begin
 								node_io_read <= '0';
 
 								-- Write to ACC or NIL
-								if node_dst_reg = ACC then
-									node_acc <= node_src;
+								if node_dst_reg = ACC and node_io_write = '1' then
+									node_acc <= node_io_value;
+									node_io_write <= '0';
 									IncrementPC(node_pc, last_instruction_address);
-								elsif node_dst_reg = NIL then
+								elsif node_dst_reg = NIL and node_io_write = '1' then
+									node_io_write <= '0';
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
 							end if;
@@ -596,11 +597,11 @@ begin
 							elsif current_instruction(15 downto 12) = "0000" then
 								if current_instruction(10) = '1' then
 									-- SUB
-									node_acc <= node_acc - node_src;
+									node_acc <= node_acc - node_io_value;
 									IncrementPC(node_pc, last_instruction_address);
 								else
 									-- ADD
-									node_acc <= node_acc + node_src;
+									node_acc <= node_acc + node_io_value;
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
 							elsif current_instruction = x"4800" then
