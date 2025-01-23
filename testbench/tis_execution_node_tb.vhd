@@ -57,26 +57,14 @@ architecture rtl of tis_execution_node_tb is
 	-- Full TIS I/O Cycle
 	procedure TisPulse(signal clk : inout std_logic) is
 	begin
-		wait for 1 ns;
-		clk <= '0';
-		wait for 1 ns;
-		clk <= '1';
-		wait for 1 ns;
-		clk <= '0';
-		wait for 1 ns;
-		clk <= '1';
-		wait for 1 ns;
-		clk <= '0';
-		wait for 1 ns;
-		clk <= '1';
-		wait for 1 ns;
-		clk <= '0';
-		wait for 1 ns;
-		clk <= '1';
-		wait for 1 ns;
-		clk <= '0';
-		wait for 1 ns;
-		clk <= '1';
+		-- Each cycle needs 6 rising edges
+		for i in 1 to 6 loop
+			wait for 1 ns;
+			clk <= '0';
+			wait for 1 ns;
+			clk <= '1';
+		end loop;
+
 		wait for 1 ns;
 	end procedure;
 
@@ -170,7 +158,7 @@ begin
 		-- 0 NOP (31 downto 16), (Prefix number is PC)
 		write_tb <= '1';
 		address_tb <= std_logic_vector(to_unsigned(0, address_tb'length));
-		writedata_tb <= x"0000" & x"0006";
+		writedata_tb <= x"0000" & x"0008";
 		ClockPulse(clock_tb);
 
 		-- 1 ADD 421 (15 downto 0)
@@ -186,9 +174,15 @@ begin
 		ClockPulse(clock_tb);
 
 		-- 5 MOV 744, ACC (15 downto 0)
-		-- 6 JEZ 2 (31 downto 16)
+		-- 6 JEZ 8 (31 downto 16)
 		address_tb <= std_logic_vector(to_unsigned(3, address_tb'length));
-		writedata_tb <= x"0C00" & x"0806";
+		writedata_tb <= x"7188" & x"8AE8";
+		ClockPulse(clock_tb);
+
+		-- 7 MOV 123, ACC (15 downto 0)
+		-- 8 MOV 456, ACC (31 downto 16)
+		address_tb <= std_logic_vector(to_unsigned(4, address_tb'length));
+		writedata_tb <= x"89C8" & x"887B";
 		ClockPulse(clock_tb);
 
 		-- Stop writing, start reading
@@ -198,7 +192,7 @@ begin
 
 		-- Validate memory state
 		ClockPulse(clock_tb);
-		assert readdata_tb = x"0000" & x"0006" report "(0) Failed to validate memory" severity error;
+		assert readdata_tb = x"0000" & x"0008" report "(0) Failed to validate memory" severity error;
 		address_tb <= std_logic_vector(to_unsigned(1, address_tb'length));
 
 		ClockPulse(clock_tb);
@@ -210,31 +204,59 @@ begin
 		address_tb <= std_logic_vector(to_unsigned(3, address_tb'length));
 
 		ClockPulse(clock_tb);
-		assert readdata_tb = x"0C00" & x"0806" report "(3) Failed to validate memory" severity error;
+		assert readdata_tb = x"7188" & x"8AE8" report "(3) Failed to validate memory" severity error;
+		address_tb <= std_logic_vector(to_unsigned(4, address_tb'length));
 
+		ClockPulse(clock_tb);
+		assert readdata_tb = x"89C8" & x"887B" report "(4) Failed to validate memory" severity error;
 		wait for 1 ns;
-		tis_active_tb <= '1';
-		TisPulse(clock_tb); -- NOP
-		assert pc_tb = "0000" report "NOP: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
-		assert acc_tb = 0 report "NOP: Expecting ACC = 0, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "NOP: Expecting BAK = 0, got " & to_string(bak_tb);
 
-		TisPulse(clock_tb); -- ADD 421
+		tis_active_tb <= '1';
+		assert pc_tb = "0000" report "INIT: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- NOP
+		assert acc_tb = 0 report "INIT: Expecting ACC = 0, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "INIT: Expecting BAK = 0, got " & to_string(bak_tb);
+
 		assert pc_tb = "0001" report "NOP: Expecting PC = 1, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- ADD 421
 		assert acc_tb = 421 report "ADD 421: Expecting ACC = 421, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "ADD 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
+		assert pc_tb = "0010" report "ADD 421: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- SUB 421
-		assert pc_tb = "0010" report "NOP: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
 		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
 		i_left_active_tb <= '1';
 		i_left_tb <= std_logic_vector(to_signed(integer(619), i_left_tb'length));
+		assert pc_tb = "0011" report "SUB 421: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- ADD ANY
-		assert pc_tb = "0011" report "NOP: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
-		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
-		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
+		assert acc_tb = 619 report "ADD ANY: Expecting ACC = 619, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "ADD ANY: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0100" report "SUB NIL: Expecting PC = 4, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- SUB NIL
+		assert acc_tb = 619 report "SUB NIL: Expecting ACC = 619, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "SUB NIL: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0101" report "MOV 744, ACC: Expecting PC = 5, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- MOV 744, ACC
+		assert acc_tb = 744 report "MOV 744, ACC: Expecting ACC = 744, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "MOV 744, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		assert pc_tb = "0110" report "JNZ 8: Expecting PC = 6, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- JNZ 8
+		assert acc_tb = 744 report "JNZ 8: Expecting ACC = 744, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "JNZ 8: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		-- Jumped over MOV 123, ACC
+		assert pc_tb = "1000" report "MOV 456, ACC: Expecting PC = 8, got " & to_string(to_integer(pc_tb));
+		TisPulse(clock_tb); -- MOV 456, ACC
+		assert acc_tb = 456 report "MOV 456, ACC: Expecting ACC = 456, got " & to_string(acc_tb);
+		assert bak_tb = 0 report "MOV 456, ACC: Expecting BAK = 0, got " & to_string(bak_tb);
+
+		TisPulse(clock_tb); -- MOV 456, ACC
+		assert acc_tb = 456 report "Expecting ACC = 456, got " & to_string(acc_tb);
 
 		report "Testbench success!!!" severity note;
 		std.env.stop;
