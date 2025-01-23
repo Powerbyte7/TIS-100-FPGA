@@ -7,12 +7,12 @@ entity tis_node is
 	port (
 		clock, resetn           : in  std_logic;
 		read, write, chipselect : in  std_logic;
-		address                 : in  std_logic_vector(15 downto 0);
+		address                 : in  std_logic_vector(2 downto 0);
 		readdata                : out std_logic_vector(31 downto 0);
 		writedata               : in  std_logic_vector(31 downto 0);
 		byteenable              : in  std_logic_vector(3 downto 0);
 		Q_export                : out std_logic_vector(31 downto 0);
-        -- Used to avoid early start without initialized program
+		-- Used to avoid early start without initialized program
 		tis_active              : in  std_logic;
 		-- Left conduit
 		i_left                  : in  std_logic_vector(10 downto 0);
@@ -53,7 +53,7 @@ architecture rtl of tis_node is
 	-- last_node gets set every read/write
 	signal last_node : node := NONE;
 
-    signal current_instruction : std_logic_vector(15 downto 0);
+	signal current_instruction : std_logic_vector(15 downto 0);
 begin
 	Q_export <= regs(0);
 
@@ -76,6 +76,16 @@ begin
 		end if;
 	end process;
 
+	instruction_fetch: process (pc, regs)
+	begin
+		-- Get the current intstruction by reading address in program counter
+		if pc(0) = '0' then
+			current_instruction <= regs(to_integer(pc(3 downto 1)))(15 downto 0);
+		elsif pc(0) = '1' then
+			current_instruction <= regs(to_integer(pc(3 downto 1)))(31 downto 16);
+		end if;
+	end process;
+
 	processor: process (clock, resetn)
 	begin
 		if resetn = '1' then
@@ -89,12 +99,14 @@ begin
 			o_down_active <= '0';
 		elsif rising_edge(clock) then
 			if tis_active then
-                -- Get the current intstruction by reading address in program counter
-                if pc(0) = '0' then
-				    current_instruction <= regs(to_integer(pc(3 downto 1)))(15 downto 0);
-                elsif pc(0) = '1' then
-				    current_instruction <= regs(to_integer(pc(3 downto 1)))(31 downto 16);
-                end if;
+				case current_instruction(15 downto 14) is
+					when "00" =>
+						-- ADD or SUB
+						pc <= pc + 1;
+						acc <= acc + to_integer(unsigned(current_instruction(9 downto 0)));
+					when others =>
+						pc <= pc + 1;
+				end case;
 			end if;
 		end if;
 	end process;
