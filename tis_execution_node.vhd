@@ -198,6 +198,9 @@ begin
 									node_io_read <= '0';
 									node_io_write <= '0';
 
+									-- Avoids previous register from skipping a read on a port 
+									node_src_reg <= "111"; 
+
 									if current_instruction(11) = '1' then
 										-- ADD or SUB with register
 										if current_instruction(2 downto 0) = NIL then
@@ -231,7 +234,7 @@ begin
 									node_io_read <= '1';
 									node_io_write <= '1';
 
-									node_src_reg <= NIL;
+									node_src_reg <= NIL; -- Immediate operand in SRC
 									node_dst_reg <= current_instruction(13 downto 11);
 									node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 
@@ -263,7 +266,6 @@ begin
 									if current_instruction(13 downto 11) = LAST then
 										node_dst_reg <= node_last;
 									end if;
-
 								when others =>
 							end case;
 						end if; -- IO_NONE check
@@ -514,15 +516,16 @@ begin
 								end if;
 							end if;
 						elsif node_io_write = '1' then
-							-- Write to ACC or NIL (ALTERNATIVE DESIGN)
-							-- if node_dst_reg = ACC then
-							-- 	node_io_write <= '0';
-							-- 	node_acc <= to_integer(signed(i_down));
-							-- 	IncrementPC(node_pc, last_instruction_address);
-							-- elsif node_dst_reg = NIL then
-							-- 	node_io_write <= '0';
-							-- 	IncrementPC(node_pc, last_instruction_address);
-							-- end if;
+							-- Write to ACC and NIL
+							if node_dst_reg = ACC then
+								node_io_write <= '0';
+								node_acc <= node_io_value;
+								IncrementPC(node_pc, last_instruction_address);
+							elsif node_dst_reg = NIL then
+								node_io_write <= '0';
+								IncrementPC(node_pc, last_instruction_address);
+							end if;
+
 							if (i_up_active = '1') and ((node_dst_reg = UP) or (node_dst_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
@@ -535,15 +538,15 @@ begin
 						else
 							-- Update program counter
 							if current_instruction(15 downto 3) = "0110000000000" then -- JRO
-								if (to_integer(node_pc) + to_integer(signed(i_up))) > to_integer(last_instruction_address) then
+								if (to_integer(node_pc) + node_io_value) > to_integer(last_instruction_address) then
 									-- Clamp to maximum address
 									node_pc <= last_instruction_address;
-								elsif (to_integer(node_pc) + to_integer(signed(i_up))) < 0 then
+								elsif (to_integer(node_pc) + node_io_value) < 0 then
 									-- Clamp to minimum address
 									node_pc <= (others => '0');
 								else
 									-- Update address
-									node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_up)), node_pc'length);
+									node_pc <= to_unsigned(to_integer(node_pc) + node_io_value, node_pc'length);
 								end if;
 							elsif current_instruction(15 downto 9) = "0111000" then -- JMP
 								-- Check JMP conditions
