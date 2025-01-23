@@ -214,23 +214,25 @@ begin
 
 		wait for 1 ns;
 		tis_active_tb <= '1';
-		assert pc_tb = "0000" report "NOP: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- NOP
+		assert pc_tb = "0000" report "NOP: Expecting PC = 0, got " & to_string(to_integer(pc_tb));
 		assert acc_tb = 0 report "NOP: Expecting ACC = 0, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "NOP: Expecting BAK = 0, got " & to_string(bak_tb);
 
-		assert pc_tb = "0001" report "NOP: Expecting PC = 1, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- ADD 421
+		assert pc_tb = "0001" report "NOP: Expecting PC = 1, got " & to_string(to_integer(pc_tb));
 		assert acc_tb = 421 report "ADD 421: Expecting ACC = 421, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "ADD 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
-		assert pc_tb = "0010" report "NOP: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- SUB 421
+		assert pc_tb = "0010" report "NOP: Expecting PC = 2, got " & to_string(to_integer(pc_tb));
 		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
-		assert pc_tb = "0011" report "NOP: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
+		i_left_active_tb <= '1';
+		i_left_tb <= std_logic_vector(to_signed(integer(619), i_left_tb'length));
 		TisPulse(clock_tb); -- ADD ANY
+		assert pc_tb = "0011" report "NOP: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
 		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 

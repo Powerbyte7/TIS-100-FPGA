@@ -46,6 +46,31 @@ architecture rtl of tis_execution_node is
 	type registers is array (0 to 7) of std_logic_vector(31 downto 0);
 	signal regs : registers;
 
+	procedure IncrementPC(
+			signal pc               : inout unsigned(3 downto 0);
+			signal last_instruction : in    unsigned(3 downto 0)
+		) is
+	begin
+		if pc + 1 = last_instruction then
+			pc <= (others => '0');
+		else
+			pc <= pc + 1;
+		end if;
+	end procedure;
+
+	procedure SetPC(
+			signal pc               : out unsigned(3 downto 0);
+			signal last_instruction : in  unsigned(3 downto 0);
+			signal value            : in  std_logic_vector(3 downto 0)
+		) is
+	begin
+		if unsigned(value) < last_instruction then
+			pc <= unsigned(value);
+		else
+			pc <= last_instruction;
+		end if;
+	end procedure;
+
 	-- CPU State
 	constant NIL   : std_logic_vector(2 downto 0) := "000";
 	constant ACC   : std_logic_vector(2 downto 0) := "001";
@@ -55,6 +80,13 @@ architecture rtl of tis_execution_node is
 	constant RIGHT : std_logic_vector(2 downto 0) := "101";
 	constant ANY   : std_logic_vector(2 downto 0) := "110";
 	constant LAST  : std_logic_vector(2 downto 0) := "111";
+
+	-- Jump conditions
+	constant JMP : std_logic_vector(2 downto 0) := "000";
+	constant JEZ : std_logic_vector(2 downto 0) := "001";
+	constant JLZ : std_logic_vector(2 downto 0) := "010";
+	constant JGZ : std_logic_vector(2 downto 0) := "100";
+	constant JNZ : std_logic_vector(2 downto 0) := "110";
 
 	type tis_state is (TIS_RUN, TIS_LEFT, TIS_RIGHT, TIS_UP, TIS_DOWN, TIS_FINISH);
 
@@ -77,13 +109,16 @@ architecture rtl of tis_execution_node is
 	-- Program Counter
 	signal node_pc : unsigned(3 downto 0) := (others => '0');
 	-- Instruction at current PC
-	signal current_instruction : std_logic_vector(15 downto 0);
+	signal current_instruction      : std_logic_vector(15 downto 0);
+	signal last_instruction_address : unsigned(3 downto 0);
 
 begin
 	Q_export  <= regs(0);
 	debug_acc <= node_acc;
 	debug_bak <= node_bak;
 	debug_pc  <= node_pc;
+
+	last_instruction_address <= unsigned(regs(0)(3 downto 0));
 
 	memory_bus: process (clock, resetn)
 	begin
@@ -107,10 +142,10 @@ begin
 	instruction_fetch: process (node_pc, regs)
 	begin
 		-- Get the current intstruction by reading address in program counter
-		if node_pc(0) = '1' then
-			current_instruction <= regs(to_integer(node_pc(3 downto 1)) + 1)(15 downto 0);
-		elsif node_pc(0) = '0' then
+		if node_pc(0) = '0' then
 			current_instruction <= regs(to_integer(node_pc(3 downto 1)))(31 downto 16);
+		elsif node_pc(0) = '1' then
+			current_instruction <= regs(to_integer(node_pc(3 downto 1)) + 1)(15 downto 0);
 		end if;
 	end process;
 
@@ -168,13 +203,11 @@ begin
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_acc <= node_acc - to_integer(unsigned(current_instruction(9 downto 0)));
-											node_pc <= node_pc + 1;
 										else
 											report "OPC: ADD " & to_string(unsigned(current_instruction(9 downto 0))) severity note;
 											node_io_read <= '0';
 											node_io_write <= '0';
 											node_acc <= node_acc + to_integer(unsigned(current_instruction(9 downto 0)));
-											node_pc <= node_pc + 1;
 										end if;
 									end if;
 								when "10" => -- MOV with immediate operand
@@ -224,10 +257,12 @@ begin
 						-- Signal willingness to write/read
 						if node_io_read = '1' then
 							if (node_src_reg = LEFT) or (node_src_reg = ANY) then
+								-- Try read on LEFT port
 								o_left_active <= '1';
 							end if;
 						elsif node_io_write = '1' then
 							if (node_src_reg = RIGHT) or (node_src_reg = ANY) then
+								-- Try write on RIGHT port
 								o_right_active <= '1';
 							end if;
 						end if;
@@ -247,7 +282,11 @@ begin
 								-- READ success!
 								node_src <= i_left;
 								node_io_read <= '0';
+								if node_src_reg = ANY then
+									node_last <= LEFT;
+								end if;
 							elsif (node_src_reg = RIGHT) or (node_src_reg = ANY) then
+								-- Try read on RIGHT port instead
 								o_right_active <= '1';
 							end if;
 						elsif node_io_write = '1' then
@@ -255,7 +294,11 @@ begin
 							if (i_right_active = '1') and ((node_src_reg = RIGHT) or (node_src_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
+								if node_src_reg = ANY then
+									node_last <= RIGHT;
+								end if;
 							elsif (node_dst_reg = LEFT) or (node_dst_reg = ANY) then
+								-- Try write on LEFT port instead
 								o_left_active <= '1';
 							end if;
 						end if;
@@ -275,7 +318,11 @@ begin
 								-- READ success!
 								node_src <= i_right;
 								node_io_read <= '0';
+								if node_src_reg = ANY then
+									node_last <= RIGHT;
+								end if;
 							elsif (node_src_reg = UP) or (node_src_reg = ANY) then
+								-- Try read on UP port instead
 								o_up_active <= '1';
 							end if;
 						elsif node_io_write = '1' then
@@ -283,7 +330,11 @@ begin
 							if (i_left_active = '1') and ((node_src_reg = LEFT) or (node_src_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
+								if node_src_reg = ANY then
+									node_last <= LEFT;
+								end if;
 							elsif (node_dst_reg = DOWN) or (node_dst_reg = ANY) then
+								-- Try write on DOWN port instead
 								o_down_active <= '1';
 							end if;
 						end if;
@@ -303,7 +354,11 @@ begin
 								-- READ success!
 								node_src <= i_up;
 								node_io_read <= '0';
+								if node_src_reg = ANY then
+									node_last <= UP;
+								end if;
 							elsif (node_src_reg = DOWN) or (node_src_reg = ANY) then
+								-- Try read on DOWN port instead
 								o_down_active <= '1';
 							end if;
 						elsif node_io_write = '1' then
@@ -311,7 +366,11 @@ begin
 							if (i_down_active = '1') and ((node_src_reg = DOWN) or (node_src_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
+								if node_src_reg = ANY then
+									node_last <= DOWN;
+								end if;
 							elsif (node_dst_reg = UP) or (node_dst_reg = ANY) then
+								-- Try write on UP port instead
 								o_up_active <= '1';
 							end if;
 						end if;
@@ -325,12 +384,80 @@ begin
 								-- READ success!
 								node_src <= i_up;
 								node_io_read <= '0';
+								if node_src_reg = ANY then
+									node_last <= DOWN;
+								end if;
+								-- Update program counter
+								if current_instruction(15 downto 3) = "0110000000000" then -- JRO
+									if (to_integer(node_pc) + to_integer(signed(i_up))) > to_integer(last_instruction_address) then
+										-- Clamp to maximum address
+										node_pc <= last_instruction_address;
+									elsif (to_integer(node_pc) + to_integer(signed(i_up))) < 0 then
+										-- Clamp to minimum address
+										node_pc <= (others => '0');
+									else
+										-- Update address
+										node_pc <= to_unsigned(to_integer(node_pc) + to_integer(signed(i_up)), node_pc'length);
+									end if;
+								elsif current_instruction(15 downto 9) = "0111000" then -- JMP
+									-- Check JMP conditions
+									case current_instruction(8 downto 6) is
+										when JMP =>
+											-- Bounds check
+											SetPC(node_pc, last_instruction_address, current_instruction(3 downto 0));
+										when JEZ =>
+											-- Condition
+											if node_acc = 0 then
+												-- Bounds check
+												SetPC(node_pc, last_instruction_address, current_instruction(3 downto 0));
+											else
+												IncrementPC(node_pc, last_instruction_address);
+											end if;
+										when JNZ =>
+											-- Condition
+											if not (node_acc = 0) then
+												-- Bounds check
+												SetPC(node_pc, last_instruction_address, current_instruction(3 downto 0));
+											else
+												IncrementPC(node_pc, last_instruction_address);
+											end if;
+										when JGZ =>
+											-- Condition
+											if node_acc > 0 then
+												-- Bounds check
+												SetPC(node_pc, last_instruction_address, current_instruction(3 downto 0));
+											else
+												IncrementPC(node_pc, last_instruction_address);
+											end if;
+										when JLZ =>
+											-- Condition
+											if node_acc < 0 then
+												SetPC(node_pc, last_instruction_address, current_instruction(3 downto 0));
+											else
+												IncrementPC(node_pc, last_instruction_address);
+											end if;
+										when others =>
+										-- Do nothing
+									end case;
+
+								else
+									-- Increment PC
+									IncrementPC(node_pc, last_instruction_address);
+								end if;
 							end if;
-						elsif node_io_read = '1' then
-							if (i_up_active = '1') and ((node_src_reg = UP) or (node_src_reg = ANY)) then
-								-- READ success!
+						elsif node_io_write = '1' then
+							if (i_up_active = '1') and ((node_dst_reg = UP) or (node_dst_reg = ANY)) then
+								-- WRITE success!
 								node_io_write <= '0';
+								if node_src_reg = ANY then
+									node_last <= UP;
+								end if;
+								-- Update program counter
+								IncrementPC(node_pc, last_instruction_address);
 							end if;
+						else
+							-- Increment PC for regular instruction (No jump or I/O)
+							IncrementPC(node_pc, last_instruction_address);
 						end if;
 
 						node_state <= TIS_RUN;
