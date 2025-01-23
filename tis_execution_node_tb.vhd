@@ -6,44 +6,6 @@ entity tis_execution_node_tb is
 end entity;
 
 architecture rtl of tis_execution_node_tb is
-	component tis_execution_node is
-		port (
-			clock, resetn           : in  std_logic;
-			read, write, chipselect : in  std_logic;
-			address                 : in  std_logic_vector(2 downto 0);
-			readdata                : out std_logic_vector(31 downto 0);
-			writedata               : in  std_logic_vector(31 downto 0);
-			byteenable              : in  std_logic_vector(3 downto 0);
-			Q_export                : out std_logic_vector(31 downto 0);
-			-- Used to avoid early start without initialized program
-			tis_active              : in  std_logic;
-			-- Left conduit
-			i_left                  : in  std_logic_vector(10 downto 0);
-			i_left_active           : in  std_logic;
-			o_left                  : out std_logic_vector(10 downto 0);
-			o_left_active           : out std_logic;
-			-- Right conduit
-			i_right                 : in  std_logic_vector(10 downto 0);
-			i_right_active          : in  std_logic;
-			o_right                 : out std_logic_vector(10 downto 0);
-			o_right_active          : out std_logic;
-			-- Up conduit
-			i_up                    : in  std_logic_vector(10 downto 0);
-			i_up_active             : in  std_logic;
-			o_up                    : out std_logic_vector(10 downto 0);
-			o_up_active             : out std_logic;
-			-- Down conduit
-			i_down                  : in  std_logic_vector(10 downto 0);
-			i_down_active           : in  std_logic;
-			o_down                  : out std_logic_vector(10 downto 0);
-			o_down_active           : out std_logic;
-			-- For debugging
-			debug_acc               : out integer range - 999 to 999;
-			debug_bak               : out integer range - 999 to 999;
-			debug_pc                : out unsigned(3 downto 0)
-		);
-	end component;
-
 	-- Signle rising edge
 	procedure ClockPulse(signal clk : inout std_logic) is
 	begin
@@ -81,31 +43,31 @@ architecture rtl of tis_execution_node_tb is
 	-- TIS signals
 	signal tis_active_tb : std_logic;
 	-- Left conduit
-	signal i_left_tb        : std_logic_vector(10 downto 0) := (others => '0');
+	signal i_left_tb        : integer range -999 to 999 := 0;
 	signal i_left_active_tb : std_logic                     := '0';
-	signal o_left_tb        : std_logic_vector(10 downto 0);
+	signal o_left_tb        : integer range -999 to 999;
 	signal o_left_active_tb : std_logic;
 	-- Right conduit
-	signal i_right_tb        : std_logic_vector(10 downto 0) := (others => '0');
+	signal i_right_tb        : integer range -999 to 999 := 0;
 	signal i_right_active_tb : std_logic                     := '0';
-	signal o_right_tb        : std_logic_vector(10 downto 0);
+	signal o_right_tb        : integer range -999 to 999;
 	signal o_right_active_tb : std_logic;
 	-- Up conduit
-	signal i_up_tb        : std_logic_vector(10 downto 0) := (others => '0');
+	signal i_up_tb        : integer range -999 to 999 := 0;
 	signal i_up_active_tb : std_logic                     := '0';
-	signal o_up_tb        : std_logic_vector(10 downto 0);
+	signal o_up_tb        : integer range -999 to 999;
 	signal o_up_active_tb : std_logic;
 	-- Down conduit
-	signal i_down_tb        : std_logic_vector(10 downto 0) := (others => '0');
+	signal i_down_tb        : integer range -999 to 999 := 0;
 	signal i_down_active_tb : std_logic                     := '0';
-	signal o_down_tb        : std_logic_vector(10 downto 0);
+	signal o_down_tb        : integer range -999 to 999;
 	signal o_down_active_tb : std_logic;
 	signal acc_tb           : integer range - 999 to 999;
 	signal bak_tb           : integer range - 999 to 999;
 	signal pc_tb            : unsigned(3 downto 0);
 begin
 	-- Port map
-	left_node: tis_execution_node
+	left_node: entity work.tis_execution_node
 		port map (
 
 			clock          => clock_tb,
@@ -227,8 +189,14 @@ begin
 		assert acc_tb = 0 report "SUB 421: Expecting ACC = 0, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "SUB 421: Expecting BAK = 0, got " & to_string(bak_tb);
 
+		-- Simulate lack of input
+		TisPulse(clock_tb); -- ADD ANY
+		TisPulse(clock_tb); -- ADD ANY
+		TisPulse(clock_tb); -- ADD ANY
+
+		-- Set input on left
 		i_left_active_tb <= '1';
-		i_left_tb <= std_logic_vector(to_signed(integer(619), i_left_tb'length));
+		i_left_tb <= 619;
 		assert pc_tb = "0011" report "SUB 421: Expecting PC = 3, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- ADD ANY
 		assert acc_tb = 619 report "ADD ANY: Expecting ACC = 619, got " & to_string(acc_tb);
@@ -249,7 +217,7 @@ begin
 		assert acc_tb = 744 report "JNZ 8: Expecting ACC = 744, got " & to_string(acc_tb);
 		assert bak_tb = 0 report "JNZ 8: Expecting BAK = 0, got " & to_string(bak_tb);
 
-		-- Jumped over MOV 123, ACC
+		-- JNZ 8 should have jumped over insturction 7 here
 		assert pc_tb = "1000" report "MOV 456, ACC: Expecting PC = 8, got " & to_string(to_integer(pc_tb));
 		TisPulse(clock_tb); -- MOV 456, ACC
 		assert acc_tb = 456 report "MOV 456, ACC: Expecting ACC = 456, got " & to_string(acc_tb);
