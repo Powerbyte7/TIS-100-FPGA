@@ -98,7 +98,7 @@ begin
 					if count = 0 then
 						readdata <= (others => '1');
 					else
-						readdata <= std_logic_vector(to_signed(values(tail_ptr), readdata'length));
+						readdata <= std_logic_vector(to_signed(values((tail_ptr + 1) mod buffer_length), readdata'length));
 						tail_ptr <= (tail_ptr + 1) mod buffer_length;
 						count <= count - 1;
 					end if;
