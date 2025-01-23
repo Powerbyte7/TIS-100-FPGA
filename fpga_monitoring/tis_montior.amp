@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><intel_fpga_monitor_program_project version="1.0">
+    <architecture>Nios II</architecture>
+    <system>
+        <system_info filepath="true">../tis_system.sopcinfo</system_info>
+        <system_sof filepath="true">../output_files/tis-toplevel.sof</system_sof>
+        <board>Not Required</board>
+        <cable>DE-SoC [USB-1]</cable>
+        <processor>nios2_qsys_0</processor>
+        <reset_processor_during_load>true</reset_processor_during_load>
+        <terminal>jtag_uart_0</terminal>
+    </system>
+    <program>
+        <type>No Program</type>
+        <source_files>
+            <source_file filepath="true">blank.srec</source_file>
+        </source_files>
+    </program>
+</intel_fpga_monitor_program_project>
