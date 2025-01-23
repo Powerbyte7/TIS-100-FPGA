@@ -208,7 +208,6 @@ begin
 										elsif current_instruction(2 downto 0) = LAST then
 											-- If LAST is NIL, node will read 0
 											if node_last = NIL then
-												node_io_read <= '0';
 												node_io_value <= 0;
 											else
 												node_io_read <= '1';
@@ -232,6 +231,7 @@ begin
 									node_io_read <= '1';
 									node_io_write <= '1';
 
+									node_src_reg <= NIL;
 									node_dst_reg <= current_instruction(13 downto 11);
 									node_io_value <= to_integer(signed(current_instruction(10 downto 0)));
 
@@ -400,17 +400,17 @@ begin
 					when TIS_FINISH =>
 
 						if node_io_read = '1' then
-							-- Mark read as if done <SRC> was ACC or NIL
-							-- This is done to make a write take two cycles
+							-- Mark read as done if <SRC> was ACC or NIL
+							-- This lets writes to those registers take 1 cycle
 							if node_src_reg = ACC or node_src_reg = NIL then
 								node_io_read <= '0';
 
 								-- Write to ACC or NIL
-								if node_dst_reg = ACC then
+								if node_dst_reg = ACC and node_io_write <= '1' then
 									node_io_write <= '0';
 									node_acc <= node_io_value;
 									IncrementPC(node_pc, last_instruction_address);
-								elsif node_dst_reg = NIL then
+								elsif node_dst_reg = NIL and node_io_write <= '1' then
 									node_io_write <= '0';
 									IncrementPC(node_pc, last_instruction_address);
 								end if;
@@ -514,6 +514,15 @@ begin
 								end if;
 							end if;
 						elsif node_io_write = '1' then
+							-- Write to ACC or NIL (ALTERNATIVE DESIGN)
+							-- if node_dst_reg = ACC then
+							-- 	node_io_write <= '0';
+							-- 	node_acc <= to_integer(signed(i_down));
+							-- 	IncrementPC(node_pc, last_instruction_address);
+							-- elsif node_dst_reg = NIL then
+							-- 	node_io_write <= '0';
+							-- 	IncrementPC(node_pc, last_instruction_address);
+							-- end if;
 							if (i_up_active = '1') and ((node_dst_reg = UP) or (node_dst_reg = ANY)) then
 								-- WRITE success!
 								node_io_write <= '0';
