@@ -29,7 +29,7 @@
    {
       datum baseAddress
       {
-         value = "40";
+         value = "72";
          type = "String";
       }
    }
@@ -66,7 +66,7 @@
    {
       datum baseAddress
       {
-         value = "786432";
+         value = "1048576";
          type = "String";
       }
    }
@@ -74,7 +74,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "4";
          type = "int";
       }
    }
@@ -86,23 +86,31 @@
          type = "String";
       }
    }
-   element tis_node_0
+   element tis_controller_0
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "8";
          type = "int";
       }
    }
-   element tis_node_0.avalon_slave_0
+   element tis_execution_node_0
+   {
+      datum _sortIndex
+      {
+         value = "6";
+         type = "int";
+      }
+   }
+   element tis_execution_node_0.avalon_slave_0
    {
       datum baseAddress
       {
-         value = "524288";
+         value = "32";
          type = "String";
       }
    }
-   element tis_node_1
+   element tis_stack_input
    {
       datum _sortIndex
       {
@@ -110,11 +118,147 @@
          type = "int";
       }
    }
-   element tis_node_1.avalon_slave_0
+   element tis_stack_input.avalon_slave_0
    {
       datum baseAddress
       {
-         value = "262144";
+         value = "84";
+         type = "String";
+      }
+   }
+   element tis_stack_output
+   {
+      datum _sortIndex
+      {
+         value = "7";
+         type = "int";
+      }
+   }
+   element tis_stack_output.avalon_slave_0
+   {
+      datum baseAddress
+      {
+         value = "80";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element tis_system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
          type = "String";
       }
    }
@@ -141,6 +285,16 @@
  <instanceScript></instanceScript>
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
+ <interface
+   name="tis_enable"
+   internal="tis_controller_0.tis_enable"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="tis_step"
+   internal="tis_controller_0.tis_step"
+   type="conduit"
+   dir="end" />
  <module name="clk_0" kind="clock_source" version="18.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
@@ -179,8 +333,8 @@
   <parameter name="cpuID_stored" value="0" />
   <parameter name="cpuReset" value="false" />
   <parameter name="customInstSlavesSystemInfo" value="&lt;info/&gt;" />
-  <parameter name="dataAddrWidth" value="20" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='timer_0.s1' start='0x0' end='0x20' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x28' end='0x30' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x800' end='0x1000' /><slave name='tis_node_1.avalon_slave_0' start='0x40000' end='0x80000' /><slave name='tis_node_0.avalon_slave_0' start='0x80000' end='0xC0000' /><slave name='onchip_memory2_0.s1' start='0xC0000' end='0xE0000' /></address-map>]]></parameter>
+  <parameter name="dataAddrWidth" value="21" />
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='timer_0.s1' start='0x0' end='0x20' /><slave name='tis_execution_node_0.avalon_slave_0' start='0x20' end='0x40' /><slave name='jtag_uart_0.avalon_jtag_slave' start='0x48' end='0x50' /><slave name='tis_stack_output.avalon_slave_0' start='0x50' end='0x54' /><slave name='tis_stack_input.avalon_slave_0' start='0x54' end='0x58' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x800' end='0x1000' /><slave name='onchip_memory2_0.s1' start='0x100000' end='0x140000' /></address-map>]]></parameter>
   <parameter name="dcache_bursts" value="false" />
   <parameter name="dcache_lineSize" value="32" />
   <parameter name="dcache_numTCDM" value="0" />
@@ -206,9 +360,9 @@
   <parameter name="icache_size" value="4096" />
   <parameter name="icache_tagramBlockType" value="Automatic" />
   <parameter name="impl" value="Tiny" />
-  <parameter name="instAddrWidth" value="20" />
-  <parameter name="instSlaveMapParam"><![CDATA[<address-map><slave name='jtag_uart_0.avalon_jtag_slave' start='0x28' end='0x30' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x800' end='0x1000' /><slave name='onchip_memory2_0.s1' start='0xC0000' end='0xE0000' /></address-map>]]></parameter>
-  <parameter name="internalIrqMaskSystemInfo" value="3" />
+  <parameter name="instAddrWidth" value="21" />
+  <parameter name="instSlaveMapParam"><![CDATA[<address-map><slave name='jtag_uart_0.avalon_jtag_slave' start='0x48' end='0x50' /><slave name='nios2_qsys_0.jtag_debug_module' start='0x800' end='0x1000' /><slave name='onchip_memory2_0.s1' start='0x100000' end='0x140000' /></address-map>]]></parameter>
+  <parameter name="internalIrqMaskSystemInfo" value="7" />
   <parameter name="manuallyAssignCpuID" value="true" />
   <parameter name="mmu_TLBMissExcOffset" value="0" />
   <parameter name="mmu_TLBMissExcSlave" value="None" />
@@ -317,7 +471,7 @@
   <parameter name="initMemContent" value="true" />
   <parameter name="initializationFileName" value="onchip_mem.hex" />
   <parameter name="instanceID" value="NONE" />
-  <parameter name="memorySize" value="131072" />
+  <parameter name="memorySize" value="262144" />
   <parameter name="readDuringWriteMode" value="DONT_CARE" />
   <parameter name="resetrequest_enabled" value="true" />
   <parameter name="simAllowMRAMContentsFile" value="false" />
@@ -341,33 +495,64 @@
   <parameter name="timeoutPulseOutput" value="false" />
   <parameter name="watchdogPulse" value="2" />
  </module>
- <module name="tis_node_0" kind="tis_node" version="1.0" enabled="1" />
- <module name="tis_node_1" kind="tis_node" version="1.0" enabled="1" />
+ <module
+   name="tis_controller_0"
+   kind="tis_controller"
+   version="1.0"
+   enabled="1" />
+ <module
+   name="tis_execution_node_0"
+   kind="tis_execution_node"
+   version="1.0"
+   enabled="1" />
+ <module
+   name="tis_stack_input"
+   kind="tis_stack_node"
+   version="1.0"
+   enabled="1">
+  <parameter name="buffer_length" value="15" />
+ </module>
+ <module
+   name="tis_stack_output"
+   kind="tis_stack_node"
+   version="1.0"
+   enabled="1">
+  <parameter name="buffer_length" value="15" />
+ </module>
  <connection
    kind="avalon"
    version="18.1"
    start="nios2_qsys_0.data_master"
    end="jtag_uart_0.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0028" />
+  <parameter name="baseAddress" value="0x0048" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
    kind="avalon"
    version="18.1"
    start="nios2_qsys_0.data_master"
-   end="tis_node_0.avalon_slave_0">
+   end="tis_stack_input.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x00080000" />
+  <parameter name="baseAddress" value="0x0054" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
    kind="avalon"
    version="18.1"
    start="nios2_qsys_0.data_master"
-   end="tis_node_1.avalon_slave_0">
+   end="tis_stack_output.avalon_slave_0">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x00040000" />
+  <parameter name="baseAddress" value="0x0050" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="18.1"
+   start="nios2_qsys_0.data_master"
+   end="tis_execution_node_0.avalon_slave_0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0020" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -385,7 +570,7 @@
    start="nios2_qsys_0.data_master"
    end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x000c0000" />
+  <parameter name="baseAddress" value="0x00100000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -403,7 +588,7 @@
    start="nios2_qsys_0.instruction_master"
    end="jtag_uart_0.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0028" />
+  <parameter name="baseAddress" value="0x0048" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -421,7 +606,7 @@
    start="nios2_qsys_0.instruction_master"
    end="onchip_memory2_0.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x000c0000" />
+  <parameter name="baseAddress" value="0x00100000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection kind="clock" version="18.1" start="clk_0.clk" end="nios2_qsys_0.clk" />
@@ -436,22 +621,50 @@
    kind="clock"
    version="18.1"
    start="clk_0.clk"
-   end="tis_node_1.clock_sink" />
+   end="tis_execution_node_0.clock" />
  <connection
    kind="clock"
    version="18.1"
    start="clk_0.clk"
-   end="tis_node_0.clock_sink" />
+   end="tis_stack_input.clock" />
+ <connection
+   kind="clock"
+   version="18.1"
+   start="clk_0.clk"
+   end="tis_stack_output.clock" />
+ <connection
+   kind="clock"
+   version="18.1"
+   start="clk_0.clk"
+   end="tis_controller_0.clock_sink" />
  <connection
    kind="conduit"
    version="18.1"
-   start="tis_node_0.left"
-   end="tis_node_1.right">
+   start="tis_stack_input.down"
+   end="tis_execution_node_0.up">
   <parameter name="endPort" value="" />
   <parameter name="endPortLSB" value="0" />
   <parameter name="startPort" value="" />
   <parameter name="startPortLSB" value="0" />
   <parameter name="width" value="0" />
+ </connection>
+ <connection
+   kind="conduit"
+   version="18.1"
+   start="tis_execution_node_0.down"
+   end="tis_stack_output.up">
+  <parameter name="endPort" value="" />
+  <parameter name="endPortLSB" value="0" />
+  <parameter name="startPort" value="" />
+  <parameter name="startPortLSB" value="0" />
+  <parameter name="width" value="0" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="18.1"
+   start="nios2_qsys_0.d_irq"
+   end="tis_stack_output.interrupt_sender">
+  <parameter name="irqNumber" value="2" />
  </connection>
  <connection
    kind="interrupt"
@@ -471,12 +684,7 @@
    kind="reset"
    version="18.1"
    start="clk_0.clk_reset"
-   end="tis_node_0.clock_reset" />
- <connection
-   kind="reset"
-   version="18.1"
-   start="clk_0.clk_reset"
-   end="tis_node_1.clock_reset" />
+   end="tis_controller_0.clock_reset" />
  <connection
    kind="reset"
    version="18.1"
@@ -491,12 +699,32 @@
    kind="reset"
    version="18.1"
    start="clk_0.clk_reset"
+   end="tis_stack_input.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
+   end="tis_execution_node_0.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
+   end="tis_stack_output.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="clk_0.clk_reset"
    end="onchip_memory2_0.reset1" />
  <connection
    kind="reset"
    version="18.1"
    start="clk_0.clk_reset"
    end="nios2_qsys_0.reset_n" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="nios2_qsys_0.jtag_debug_module_reset"
+   end="tis_controller_0.clock_reset" />
  <connection
    kind="reset"
    version="18.1"
@@ -511,12 +739,42 @@
    kind="reset"
    version="18.1"
    start="nios2_qsys_0.jtag_debug_module_reset"
+   end="tis_stack_input.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="nios2_qsys_0.jtag_debug_module_reset"
+   end="tis_execution_node_0.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="nios2_qsys_0.jtag_debug_module_reset"
+   end="tis_stack_output.reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="nios2_qsys_0.jtag_debug_module_reset"
    end="onchip_memory2_0.reset1" />
  <connection
    kind="reset"
    version="18.1"
    start="nios2_qsys_0.jtag_debug_module_reset"
    end="nios2_qsys_0.reset_n" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="tis_controller_0.tis_active"
+   end="tis_stack_output.active" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="tis_controller_0.tis_active"
+   end="tis_execution_node_0.active" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="tis_controller_0.tis_active"
+   end="tis_stack_input.active" />
  <interconnectRequirement for="$system" name="qsys_mm.clockCrossingAdapter" value="HANDSHAKE" />
  <interconnectRequirement for="$system" name="qsys_mm.enableEccProtection" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
