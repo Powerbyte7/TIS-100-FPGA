@@ -67,6 +67,28 @@ architecture rtl of tis_stack_node is
 			return to_integer(a);
 		end if;
 	end function;
+
+	pure function IncrementPTR(
+			signal ptr : in integer range 0 to buffer_length - 1
+		) return integer is
+	begin
+		if ptr = (buffer_length - 1) then
+			return 0;
+		else
+			return ptr + 1;
+		end if;
+	end function;
+
+	pure function DecrementPTR(
+			signal ptr : in integer range 0 to buffer_length - 1
+		) return integer is
+	begin
+		if ptr = 0 then
+			return buffer_length - 1;
+		else
+			return ptr - 1;
+		end if;
+	end function;
 begin
 	o_left  <= node_output;
 	o_right <= node_output;
@@ -98,8 +120,8 @@ begin
 					if count = 0 then
 						readdata <= (others => '1');
 					else
-						readdata <= std_logic_vector(to_signed(values((tail_ptr + 1) mod buffer_length), readdata'length));
-						tail_ptr <= (tail_ptr + 1) mod buffer_length;
+						readdata <= std_logic_vector(to_signed(values(IncrementPTR(tail_ptr)), readdata'length));
+						tail_ptr <= IncrementPTR(tail_ptr);
 						count <= count - 1;
 					end if;
 				else
@@ -109,7 +131,7 @@ begin
 				if address = "1" then
 					if count < buffer_length then
 						values(tail_ptr) <= to_tis_integer(signed(writedata));
-						tail_ptr <= (tail_ptr - 1 + buffer_length) mod buffer_length;
+						tail_ptr <= DecrementPTR(tail_ptr);
 						count <= count + 1;
 					end if;
 				else
@@ -169,8 +191,8 @@ begin
 
 							elsif o_left_active = '1' and i_left_active = '1' then
 								-- Read value from LEFT
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_left));
-								head_ptr <= (head_ptr + 1) mod buffer_length;
+								values(IncrementPTR(head_ptr)) <= to_tis_integer(signed(i_left));
+								head_ptr <= IncrementPTR(tail_ptr);
 								count <= count + 1;
 								-- Read if buffer can take another value
 								if count < (buffer_length - 1) then
@@ -182,7 +204,7 @@ begin
 
 							elsif o_right_active = '1' and i_right_active = '1' then
 								-- Written value to RIGHT
-								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								head_ptr <= DecrementPTR(head_ptr);
 								count <= count - 1;
 								-- Check if any values are left in buffer
 								if count > 1 then
@@ -220,8 +242,8 @@ begin
 
 							elsif o_right_active = '1' and i_right_active = '1' then
 								-- Read value from RIGHT
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_right));
-								head_ptr <= (head_ptr + 1) mod buffer_length;
+								values(IncrementPTR(head_ptr)) <= to_tis_integer(signed(i_right));
+								head_ptr <= IncrementPTR(head_ptr);
 								count <= count + 1;
 								-- Read if buffer can take another value
 								if count < (buffer_length - 1) then
@@ -233,7 +255,7 @@ begin
 
 							elsif o_left_active = '1' and i_left_active = '1' then
 								-- Written value to LEFT
-								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								head_ptr <= DecrementPTR(head_ptr);
 								count <= count - 1;
 								-- Check if any values are left in buffer
 								if count > 1 then
@@ -272,8 +294,8 @@ begin
 
 							elsif o_up_active = '1' and i_up_active = '1' then
 								-- Read value from UP
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_up));
-								head_ptr <= (head_ptr + 1) mod buffer_length;
+								values(IncrementPTR(head_ptr)) <= to_tis_integer(signed(i_up));
+								head_ptr <= IncrementPTR(head_ptr);
 								count <= count + 1;
 								-- Read if buffer can take another value
 								if count < (buffer_length - 1) then
@@ -285,7 +307,7 @@ begin
 
 							elsif o_down_active = '1' and i_down_active = '1' then
 								-- Written value to DOWN
-								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								head_ptr <= DecrementPTR(head_ptr);
 								count <= count - 1;
 								-- Check if any values are left in buffer
 								if count > 1 then
@@ -318,12 +340,12 @@ begin
 								values(head_ptr) <= to_tis_integer(signed(i_down));
 							elsif o_down_active = '1' and i_down_active = '1' then
 								-- Read value from DOWN
-								values((head_ptr + 1) mod buffer_length) <= to_tis_integer(signed(i_down));
-								head_ptr <= (head_ptr + 1) mod buffer_length;
+								values(IncrementPTR(head_ptr)) <= to_tis_integer(signed(i_down));
+								head_ptr <= IncrementPTR(head_ptr);
 								count <= count + 1;
 							elsif o_up_active = '1' and i_up_active = '1' then
 								-- Written value to UP
-								head_ptr <= (head_ptr - 1 + buffer_length) mod buffer_length;
+								head_ptr <= DecrementPTR(head_ptr);
 								count <= count - 1;
 							else
 								-- Do nothing
